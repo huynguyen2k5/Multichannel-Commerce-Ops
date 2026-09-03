@@ -2,6 +2,7 @@ from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.modules.channels.service import ChannelService
+from app.modules.inventory.service import InventoryService
 from app.modules.orders.models import Order, OrderItem
 from app.modules.orders.repository import OrderRepository
 from app.modules.orders.schemas import (
@@ -21,11 +22,13 @@ class OrderService:
         repository: OrderRepository,
         channel_service: ChannelService,
         product_service: ProductService,
+        inventory_service: InventoryService,
     ) -> None:
         self._session = session
         self._repository = repository
         self._channel_service = channel_service
         self._product_service = product_service
+        self._inventory_service = inventory_service
 
     async def import_order(self, payload: OrderImportRequest) -> OrderImportResponse:
         try:
@@ -75,6 +78,12 @@ class OrderService:
                         )
                     )
                 await self._repository.add_items(order_items)
+
+                for order_item in order_items:
+                    await self._inventory_service.consume(
+                        order_item.product_id,
+                        order_item.quantity,
+                    )
 
             return OrderImportResponse(
                 status=OrderImportStatus.IMPORTED,
