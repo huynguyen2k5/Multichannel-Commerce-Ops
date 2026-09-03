@@ -10,8 +10,12 @@ from app.modules.orders.schemas import (
     OrderImportRequest,
     OrderImportResponse,
     OrderImportStatus,
+    OrderDetail,
+    OrderItemRead,
+    OrderRead,
 )
 from app.modules.products.service import ProductService
+from app.shared.errors import NotFoundError
 
 
 class OrderService:
@@ -32,6 +36,25 @@ class OrderService:
         self._product_service = product_service
         self._inventory_service = inventory_service
         self._ledger_service = ledger_service
+
+
+    async def list_orders(self, *, limit: int, offset: int) -> list[OrderRead]:
+        orders = await self._repository.list(limit=limit, offset=offset)
+        return [OrderRead.model_validate(order) for order in orders]
+
+    async def get_order(self, order_id: int) -> OrderDetail:
+        order = await self._repository.get_by_id(order_id)
+        if order is None:
+            raise NotFoundError(
+                "ORDER_NOT_FOUND",
+                f"Order id '{order_id}' does not exist",
+                details={"order_id": order_id},
+            )
+        items = await self._repository.get_items(order_id)
+        return OrderDetail(
+            **OrderRead.model_validate(order).model_dump(),
+            items=[OrderItemRead.model_validate(item) for item in items],
+        )
 
     async def import_order(self, payload: OrderImportRequest) -> OrderImportResponse:
         try:
