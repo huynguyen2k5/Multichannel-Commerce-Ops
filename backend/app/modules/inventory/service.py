@@ -1,5 +1,6 @@
 from sqlalchemy import update
 from sqlalchemy.ext.asyncio import AsyncSession
+from sqlmodel import col
 
 from app.modules.inventory.schemas import InventoryItemRead
 from app.modules.products.models import Product
@@ -19,7 +20,7 @@ class InventoryService:
 
         statement = (
             update(Product)
-            .where(Product.id == product_id, Product.current_stock >= quantity)
+            .where(col(Product.id) == product_id, col(Product.current_stock) >= quantity)
             .values(
                 current_stock=Product.current_stock - quantity,
                 updated_at=utc_now(),
