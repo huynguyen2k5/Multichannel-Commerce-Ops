@@ -60,7 +60,7 @@ jobs:
       - name: Type check
         run: mypy app
       - name: Test
-        run: pytest
+        run: python -m pytest
       - name: Compile
         run: python -m compileall -q app tests
 
@@ -84,8 +84,8 @@ jobs:
       run:
         working-directory: backend
     env:
-      MCO_DATABASE_URL: postgresql+asyncpg://postgres:postgres@localhost:5432/mco
-      MCO_MIGRATION_DATABASE_URL: postgresql+psycopg://postgres:postgres@localhost:5432/mco
+      MCO_DATABASE_URL: postgresql+asyncpg://postgres:postgres@127.0.0.1:5432/mco
+      MCO_MIGRATION_DATABASE_URL: postgresql+psycopg://postgres:postgres@127.0.0.1:5432/mco
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5

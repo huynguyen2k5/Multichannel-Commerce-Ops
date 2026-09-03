@@ -3,7 +3,7 @@ from decimal import Decimal
 
 from sqlmodel import select
 
-from app.database import SessionFactory
+from app.database import SessionFactory, engine
 from app.modules.channels.models import Channel
 from app.modules.products.models import Product
 
@@ -39,16 +39,19 @@ PRODUCTS = (
 
 
 async def seed() -> None:
-    async with SessionFactory() as session, session.begin():
-        for channel in CHANNELS:
-            existing = await session.scalar(select(Channel).where(Channel.code == channel.code))
-            if existing is None:
-                session.add(channel)
+    try:
+        async with SessionFactory() as session, session.begin():
+            for channel in CHANNELS:
+                existing = await session.scalar(select(Channel).where(Channel.code == channel.code))
+                if existing is None:
+                    session.add(channel)
 
-        for product in PRODUCTS:
-            existing = await session.scalar(select(Product).where(Product.sku == product.sku))
-            if existing is None:
-                session.add(product)
+            for product in PRODUCTS:
+                existing = await session.scalar(select(Product).where(Product.sku == product.sku))
+                if existing is None:
+                    session.add(product)
+    finally:
+        await engine.dispose()
 
 
 if __name__ == "__main__":

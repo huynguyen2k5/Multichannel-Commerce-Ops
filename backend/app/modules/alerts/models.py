@@ -1,7 +1,7 @@
 from datetime import datetime
 from enum import StrEnum
 
-from sqlalchemy import Column, Index, Text, text
+from sqlalchemy import Column, DateTime, Index, Text, text
 from sqlalchemy import Enum as SAEnum
 from sqlmodel import Field, SQLModel
 
@@ -43,6 +43,15 @@ class Alert(SQLModel, table=True):
     dedup_key: str = Field(min_length=1, max_length=200, nullable=False)
     message: str = Field(sa_column=Column(Text, nullable=False))
     resolved: bool = Field(default=False, nullable=False, index=True)
-    created_at: datetime = Field(default_factory=utc_now, nullable=False)
-    resolved_at: datetime | None = Field(default=None, nullable=True)
-    notified_at: datetime | None = Field(default=None, nullable=True)
+    created_at: datetime = Field(
+        default_factory=utc_now,
+        sa_column=Column(DateTime(timezone=True), nullable=False),
+    )
+    resolved_at: datetime | None = Field(
+        default=None,
+        sa_column=Column(DateTime(timezone=True), nullable=True),
+    )
+    notified_at: datetime | None = Field(
+        default=None,
+        sa_column=Column(DateTime(timezone=True), nullable=True),
+    )

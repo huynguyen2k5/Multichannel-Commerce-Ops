@@ -2,7 +2,7 @@ from datetime import datetime
 from decimal import Decimal
 from enum import StrEnum
 
-from sqlalchemy import CheckConstraint, Column, Index, Numeric, UniqueConstraint
+from sqlalchemy import CheckConstraint, Column, DateTime, Index, Numeric, UniqueConstraint
 from sqlalchemy import Enum as SAEnum
 from sqlmodel import Field, SQLModel
 
@@ -28,15 +28,23 @@ class Order(SQLModel, table=True):
     id: int | None = Field(default=None, primary_key=True)
     channel_id: int = Field(foreign_key="channels.id", index=True, nullable=False)
     external_order_id: str = Field(min_length=1, max_length=100)
-    order_date: datetime = Field(nullable=False)
+    order_date: datetime = Field(sa_column=Column(DateTime(timezone=True), nullable=False))
     status: OrderStatus = Field(
         default=OrderStatus.PAID,
         sa_column=Column(SAEnum(OrderStatus, native_enum=False, length=16), nullable=False),
     )
     total_amount: Decimal = Field(sa_column=Column(Numeric(14, 2), nullable=False))
-    source_updated_at: datetime | None = Field(default=None, nullable=True)
-    created_at: datetime = Field(default_factory=utc_now, nullable=False)
-    updated_at: datetime = Field(default_factory=utc_now, nullable=False)
+    source_updated_at: datetime | None = Field(
+        default=None, sa_column=Column(DateTime(timezone=True), nullable=True)
+    )
+    created_at: datetime = Field(
+        default_factory=utc_now,
+        sa_column=Column(DateTime(timezone=True), nullable=False),
+    )
+    updated_at: datetime = Field(
+        default_factory=utc_now,
+        sa_column=Column(DateTime(timezone=True), nullable=False),
+    )
 
 
 class OrderItem(SQLModel, table=True):
