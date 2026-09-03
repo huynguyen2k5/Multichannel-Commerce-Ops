@@ -6,6 +6,7 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from app.api.router import api_router
 from app.config import Settings, get_settings
+from app.database import engine
 from app.shared.error_handlers import install_error_handlers
 from app.shared.logging import configure_logging
 from app.shared.middleware import RequestContextMiddleware
@@ -17,7 +18,10 @@ def create_app(settings: Settings | None = None) -> FastAPI:
 
     @asynccontextmanager
     async def lifespan(_: FastAPI) -> AsyncIterator[None]:
-        yield
+        try:
+            yield
+        finally:
+            await engine.dispose()
 
     app = FastAPI(
         title="Multichannel Commerce Operations API",
