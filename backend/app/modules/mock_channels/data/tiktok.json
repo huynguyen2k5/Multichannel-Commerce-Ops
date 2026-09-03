@@ -1,0 +1,22 @@
+{
+  "channel": "tiktok",
+  "orders": [
+    {
+      "external_order_id": "TT-20001",
+      "order_date": "2026-09-01T04:15:00Z",
+      "status": "paid",
+      "total_amount": "750000.00",
+      "items": [{"sku": "TEE-WHT-L", "quantity": 3, "unit_price": "250000.00"}]
+    },
+    {
+      "external_order_id": "TT-20002",
+      "order_date": "2026-09-01T06:10:00Z",
+      "status": "paid",
+      "total_amount": "570000.00",
+      "items": [
+        {"sku": "TEE-BLK-M", "quantity": 1, "unit_price": "250000.00"},
+        {"sku": "CAP-WHT", "quantity": 1, "unit_price": "320000.00"}
+      ]
+    }
+  ]
+}
