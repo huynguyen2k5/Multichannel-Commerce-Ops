@@ -1,42 +1,32 @@
-from sqlalchemy import update
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlmodel import col
 
 from app.modules.alerts.schemas import LowStockAlertRequest
 from app.modules.alerts.service import AlertService
+from app.modules.inventory.repository import InventoryRepository
 from app.modules.inventory.schemas import InventoryItemRead
 from app.modules.products.models import Product
-from app.modules.products.repository import ProductRepository
+from app.modules.products.service import ProductService
 from app.shared.errors import BusinessRuleError, NotFoundError
-from app.shared.time import utc_now
 
 
 class InventoryService:
     def __init__(
         self,
         session: AsyncSession,
-        product_repository: ProductRepository,
+        product_service: ProductService,
+        inventory_repository: InventoryRepository | None = None,
         alert_service: AlertService | None = None,
     ) -> None:
         self._session = session
-        self._products = product_repository
+        self._products = product_service
+        self._inventory = inventory_repository or InventoryRepository(session)
         self._alerts = alert_service
 
     async def consume(self, product_id: int, quantity: int) -> Product:
         if quantity <= 0:
             raise ValueError("quantity must be positive")
 
-        statement = (
-            update(Product)
-            .where(col(Product.id) == product_id, col(Product.current_stock) >= quantity)
-            .values(
-                current_stock=Product.current_stock - quantity,
-                updated_at=utc_now(),
-            )
-            .returning(Product)
-        )
-        result = await self._session.execute(statement)
-        product = result.scalar_one_or_none()
+        product = await self._inventory.consume_stock(product_id, quantity)
         if product is not None:
             if self._alerts is not None:
                 await self._alerts.create_low_stock(

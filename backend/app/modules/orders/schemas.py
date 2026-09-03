@@ -33,7 +33,9 @@ class OrderImportRequest(BaseModel):
             start=Decimal("0.00"),
         )
         if calculated_total != self.total_amount:
-            raise ValueError(f"total_amount must equal the sum of item lines ({calculated_total})")
+            raise ValueError(
+                f"total_amount must equal the sum of item lines ({calculated_total})"
+            )
         return self
 
 

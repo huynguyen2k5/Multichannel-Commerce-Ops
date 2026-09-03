@@ -1,3 +1,7 @@
+from fastapi import Depends
+from sqlalchemy.ext.asyncio import AsyncSession
+
+from app.database import get_session
 from app.modules.products.models import Product
 from app.modules.products.repository import ProductRepository
 from app.shared.errors import NotFoundError
@@ -16,3 +20,13 @@ class ProductService:
                 details={"sku": sku},
             )
         return product
+
+    async def get_by_id(self, product_id: int) -> Product | None:
+        return await self._repository.get_by_id(product_id)
+
+    async def list_all(self) -> list[Product]:
+        return await self._repository.list_all()
+
+
+def get_product_service(session: AsyncSession = Depends(get_session)) -> ProductService:
+    return ProductService(ProductRepository(session))
