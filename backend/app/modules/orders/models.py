@@ -1,6 +1,7 @@
 from datetime import datetime
 from decimal import Decimal
 from enum import StrEnum
+from typing import Any, ClassVar
 
 from sqlalchemy import CheckConstraint, Column, Index, Numeric, UniqueConstraint
 from sqlalchemy import Enum as SAEnum
@@ -14,7 +15,7 @@ class OrderStatus(StrEnum):
 
 
 class Order(SQLModel, table=True):
-    __tablename__ = "orders"
+    __tablename__: ClassVar[Any] = "orders"
     __table_args__ = (
         UniqueConstraint(
             "channel_id",
@@ -40,7 +41,7 @@ class Order(SQLModel, table=True):
 
 
 class OrderItem(SQLModel, table=True):
-    __tablename__ = "order_items"
+    __tablename__: ClassVar[Any] = "order_items"
     __table_args__ = (
         CheckConstraint("quantity > 0", name="ck_order_items_quantity_positive"),
         CheckConstraint("unit_price >= 0", name="ck_order_items_price_nonnegative"),

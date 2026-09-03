@@ -1,6 +1,6 @@
 from datetime import datetime
 from enum import StrEnum
-from typing import Any
+from typing import Any, ClassVar
 
 from sqlalchemy import JSON, Column, Index
 from sqlalchemy import Enum as SAEnum
@@ -16,7 +16,7 @@ class ReconciliationStatus(StrEnum):
 
 
 class ReconciliationLog(SQLModel, table=True):
-    __tablename__ = "reconciliation_logs"
+    __tablename__: ClassVar[Any] = "reconciliation_logs"
     __table_args__ = (Index("ix_reconciliation_logs_started_at", "started_at"),)
 
     id: int | None = Field(default=None, primary_key=True)

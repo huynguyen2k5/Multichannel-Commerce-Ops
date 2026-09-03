@@ -1,6 +1,7 @@
 from datetime import datetime
 from decimal import Decimal
 from enum import StrEnum
+from typing import Any, ClassVar
 
 from sqlalchemy import CheckConstraint, Column, Numeric, UniqueConstraint
 from sqlalchemy import Enum as SAEnum
@@ -15,7 +16,7 @@ class LedgerEntryType(StrEnum):
 
 
 class LedgerEntry(SQLModel, table=True):
-    __tablename__ = "ledger_entries"
+    __tablename__: ClassVar[Any] = "ledger_entries"
     __table_args__ = (
         UniqueConstraint("order_id", "entry_type", name="uq_ledger_order_entry_type"),
         CheckConstraint("amount >= 0", name="ck_ledger_amount_nonnegative"),
