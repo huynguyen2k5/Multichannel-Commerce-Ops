@@ -64,6 +64,7 @@ async def test_order_query_returns_newest_first(session: AsyncSession) -> None:
     orders = await build_service(session).list_orders(limit=10, offset=0)
 
     assert [order.external_order_id for order in orders] == ["WEB-NEW", "WEB-OLD"]
+    assert {order.channel for order in orders} == {"website"}
 
 
 async def test_order_detail_rejects_unknown_id(session: AsyncSession) -> None:

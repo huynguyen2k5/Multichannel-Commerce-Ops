@@ -5,8 +5,8 @@ from decimal import Decimal
 import pytest
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.modules.alerts import AlertService
 from app.modules.alerts.repository import AlertRepository
-from app.modules.alerts.service import AlertService
 from app.modules.channels import Channel, ChannelService
 from app.modules.channels.repository import ChannelRepository
 from app.modules.inventory import InventoryService
