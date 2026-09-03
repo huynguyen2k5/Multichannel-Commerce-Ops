@@ -1,19 +1,20 @@
 from datetime import datetime
-from enum import Enum
+from enum import StrEnum
 
-from sqlalchemy import Column, Enum as SAEnum, Index, Text, text
+from sqlalchemy import Column, Index, Text, text
+from sqlalchemy import Enum as SAEnum
 from sqlmodel import Field, SQLModel
 
 from app.shared.time import utc_now
 
 
-class AlertType(str, Enum):
+class AlertType(StrEnum):
     LOW_STOCK = "low_stock"
     RECONCILIATION_MISMATCH = "reconciliation_mismatch"
     SYNC_FAILURE = "sync_failure"
 
 
-class AlertSeverity(str, Enum):
+class AlertSeverity(StrEnum):
     INFO = "info"
     WARNING = "warning"
     CRITICAL = "critical"

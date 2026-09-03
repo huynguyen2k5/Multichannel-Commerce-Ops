@@ -17,3 +17,12 @@ class AlertRead(BaseModel):
     created_at: datetime
     resolved_at: datetime | None
     notified_at: datetime | None
+
+
+class LowStockAlertRequest(BaseModel):
+    product_id: int | None = None
+    sku: str
+    name: str = ""
+    current_stock: int
+    reorder_threshold: int
+

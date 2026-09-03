@@ -1,5 +1,7 @@
+from __future__ import annotations
+
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlmodel import select
+from sqlmodel import col, select
 
 from app.modules.alerts.models import Alert
 
@@ -13,23 +15,25 @@ class AlertRepository:
 
     async def get_active_by_dedup_key(self, dedup_key: str) -> Alert | None:
         result = await self._session.execute(
-            select(Alert).where(Alert.dedup_key == dedup_key, Alert.resolved.is_(False))
+            select(Alert).where(col(Alert.dedup_key) == dedup_key, col(Alert.resolved).is_(False))
         )
         return result.scalar_one_or_none()
 
-    async def list(self, *, resolved: bool | None = None, limit: int = 100) -> list[Alert]:
+    async def list_all(self, *, resolved: bool | None = None, limit: int = 100) -> list[Alert]:
         statement = select(Alert)
         if resolved is not None:
-            statement = statement.where(Alert.resolved.is_(resolved))
-        statement = statement.order_by(Alert.created_at.desc(), Alert.id.desc()).limit(limit)
+            statement = statement.where(col(Alert.resolved).is_(resolved))
+        statement = statement.order_by(
+            col(Alert.created_at).desc(), col(Alert.id).desc()
+        ).limit(limit)
         result = await self._session.execute(statement)
         return list(result.scalars().all())
 
     async def list_pending_notifications(self, *, limit: int = 100) -> list[Alert]:
         result = await self._session.execute(
             select(Alert)
-            .where(Alert.resolved.is_(False), Alert.notified_at.is_(None))
-            .order_by(Alert.created_at, Alert.id)
+            .where(col(Alert.resolved).is_(False), col(Alert.notified_at).is_(None))
+            .order_by(col(Alert.created_at), col(Alert.id))
             .limit(limit)
         )
         return list(result.scalars().all())
