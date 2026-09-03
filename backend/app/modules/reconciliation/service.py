@@ -7,8 +7,8 @@ from app.modules.alerts.models import AlertSeverity, AlertType
 from app.modules.alerts.service import AlertService
 from app.modules.channels.service import ChannelService
 from app.modules.ledger.models import LedgerEntryType
-from app.modules.ledger.repository import LedgerRepository
-from app.modules.orders.repository import OrderRepository
+from app.modules.ledger.service import LedgerService
+from app.modules.orders.service import OrderService
 from app.modules.reconciliation.models import ReconciliationLog, ReconciliationStatus
 from app.modules.reconciliation.repository import ReconciliationRepository
 from app.modules.reconciliation.schemas import (
@@ -26,37 +26,39 @@ class ReconciliationService:
         session: AsyncSession,
         repository: ReconciliationRepository,
         channel_service: ChannelService,
-        order_repository: OrderRepository,
-        ledger_repository: LedgerRepository,
+        order_service: OrderService,
+        ledger_service: LedgerService,
         alert_service: AlertService,
     ) -> None:
         self._session = session
         self._repository = repository
         self._channels = channel_service
-        self._orders = order_repository
-        self._ledger = ledger_repository
+        self._orders = order_service
+        self._ledger = ledger_service
         self._alerts = alert_service
 
     async def reconcile(self, payload: ReconciliationRequest) -> ReconciliationRead:
         started_at = utc_now()
-        async with self._session.begin():
+        tx = (
+            self._session.begin_nested()
+            if self._session.in_transaction()
+            else self._session.begin()
+        )
+        async with tx:
             channel = await self._channels.get_by_code(payload.source_system)
             assert channel.id is not None
 
             source_ids = [order.external_order_id for order in payload.orders]
-            local_orders = await self._orders.get_by_external_ids(channel.id, source_ids)
+            local_orders = await self._orders.get_orders_for_reconciliation(channel.id, source_ids)
             local_by_external = {order.external_order_id: order for order in local_orders}
             order_ids = [order.id for order in local_orders if order.id is not None]
 
-            ledger_entries = await self._ledger.get_for_orders(order_ids)
+            ledger_entries = await self._ledger.get_entries_for_orders(order_ids)
             ledger_by_order: dict[int, dict[LedgerEntryType, Decimal]] = defaultdict(dict)
             for entry in ledger_entries:
                 ledger_by_order[entry.order_id][entry.entry_type] = entry.amount
 
-            items = await self._orders.get_items_for_orders(order_ids)
-            expected_cogs: dict[int, Decimal] = defaultdict(lambda: Decimal("0.00"))
-            for item in items:
-                expected_cogs[item.order_id] += item.unit_cost * item.quantity
+            expected_cogs = await self._orders.get_order_items_cogs(order_ids)
 
             mismatches: list[ReconciliationMismatch] = []
             for source_order in payload.orders:
@@ -106,20 +108,14 @@ class ReconciliationService:
                         )
                     )
 
-            status = (
-                ReconciliationStatus.MISMATCH
-                if mismatches
-                else ReconciliationStatus.SUCCESS
-            )
+            status = ReconciliationStatus.MISMATCH if mismatches else ReconciliationStatus.SUCCESS
             log = await self._repository.create(
                 ReconciliationLog(
                     source_system=payload.source_system,
                     status=status,
                     records_checked=len(payload.orders),
                     mismatches_found=len(mismatches),
-                    detail_json={
-                        "mismatches": [mismatch.model_dump() for mismatch in mismatches]
-                    },
+                    detail_json={"mismatches": [mismatch.model_dump() for mismatch in mismatches]},
                     started_at=started_at,
                     completed_at=utc_now(),
                 )
@@ -139,10 +135,7 @@ class ReconciliationService:
         return ReconciliationRead.model_validate(log)
 
     async def list_history(self) -> list[ReconciliationRead]:
-        return [
-            ReconciliationRead.model_validate(log)
-            for log in await self._repository.list()
-        ]
+        return [ReconciliationRead.model_validate(log) for log in await self._repository.list()]
 
     async def get(self, reconciliation_id: int) -> ReconciliationRead:
         log = await self._repository.get_by_id(reconciliation_id)

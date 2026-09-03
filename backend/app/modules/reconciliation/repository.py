@@ -1,5 +1,5 @@
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlmodel import select
+from sqlmodel import col, select
 
 from app.modules.reconciliation.models import ReconciliationLog
 
@@ -19,7 +19,7 @@ class ReconciliationRepository:
     async def list(self, *, limit: int = 100) -> list[ReconciliationLog]:
         result = await self._session.execute(
             select(ReconciliationLog)
-            .order_by(ReconciliationLog.started_at.desc(), ReconciliationLog.id.desc())
+            .order_by(col(ReconciliationLog.started_at).desc(), col(ReconciliationLog.id).desc())
             .limit(limit)
         )
         return list(result.scalars().all())

@@ -1,8 +1,13 @@
+from collections import defaultdict
+from collections.abc import Sequence
+from decimal import Decimal
+
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.modules.channels.service import ChannelService
 from app.modules.inventory.service import InventoryService
+from app.modules.ledger.schemas import OrderSaleRecord, SaleItemRecord
 from app.modules.ledger.service import LedgerService
 from app.modules.orders.models import Order, OrderItem
 from app.modules.orders.repository import OrderRepository
@@ -55,6 +60,23 @@ class OrderService:
             **self._to_read(order, channel).model_dump(),
             items=[OrderItemRead.model_validate(item) for item in items],
         )
+
+    async def get_orders_for_reconciliation(
+        self,
+        channel_id: int,
+        external_order_ids: Sequence[str],
+    ) -> list[Order]:
+        return await self._repository.get_by_external_ids(channel_id, external_order_ids)
+
+    async def get_order_items_cogs(
+        self,
+        order_ids: Sequence[int],
+    ) -> dict[int, Decimal]:
+        items = await self._repository.get_items_for_orders(order_ids)
+        expected_cogs: dict[int, Decimal] = defaultdict(lambda: Decimal("0.00"))
+        for item in items:
+            expected_cogs[item.order_id] += item.unit_cost * item.quantity
+        return dict(expected_cogs)
 
     @staticmethod
     def _to_read(order: Order, channel: str) -> OrderRead:
@@ -127,7 +149,20 @@ class OrderService:
                         order_item.quantity,
                     )
 
-                await self._ledger_service.record_sale(order, order_items)
+                assert order.id is not None
+                await self._ledger_service.record_sale(
+                    OrderSaleRecord(
+                        order_id=order.id,
+                        items=[
+                            SaleItemRecord(
+                                unit_price=order_item.unit_price,
+                                unit_cost=order_item.unit_cost,
+                                quantity=order_item.quantity,
+                            )
+                            for order_item in order_items
+                        ],
+                    )
+                )
 
             return OrderImportResponse(
                 status=OrderImportStatus.IMPORTED,

@@ -1,3 +1,7 @@
+from fastapi import Depends
+from sqlalchemy.ext.asyncio import AsyncSession
+
+from app.database import get_session
 from app.modules.channels.models import Channel
 from app.modules.channels.repository import ChannelRepository
 from app.shared.errors import NotFoundError
@@ -16,3 +20,7 @@ class ChannelService:
                 details={"channel": code},
             )
         return channel
+
+
+def get_channel_service(session: AsyncSession = Depends(get_session)) -> ChannelService:
+    return ChannelService(ChannelRepository(session))

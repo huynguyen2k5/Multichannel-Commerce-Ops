@@ -9,8 +9,8 @@ from app.modules.channels.repository import ChannelRepository
 from app.modules.channels.service import ChannelService
 from app.modules.inventory.service import InventoryService
 from app.modules.ledger.repository import LedgerRepository
+from app.modules.ledger.schemas import OrderSaleRecord
 from app.modules.ledger.service import LedgerService
-from app.modules.orders.models import Order, OrderItem
 from app.modules.orders.repository import OrderRepository
 from app.modules.orders.schemas import OrderImportRequest
 from app.modules.orders.service import OrderService
@@ -20,7 +20,7 @@ from app.modules.products.service import ProductService
 
 
 class FailingLedgerService(LedgerService):
-    async def record_sale(self, order: Order, items: list[OrderItem]) -> None:
+    async def record_sale(self, record: OrderSaleRecord) -> None:
         raise RuntimeError("simulated ledger failure")
 
 

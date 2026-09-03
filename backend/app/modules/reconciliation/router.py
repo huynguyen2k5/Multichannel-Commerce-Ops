@@ -2,12 +2,11 @@ from fastapi import APIRouter, Depends, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.database import get_session
-from app.modules.alerts.repository import AlertRepository
-from app.modules.alerts.service import AlertService
-from app.modules.channels.repository import ChannelRepository
-from app.modules.channels.service import ChannelService
-from app.modules.ledger.repository import LedgerRepository
-from app.modules.orders.repository import OrderRepository
+from app.modules.alerts import AlertService, get_alert_service
+from app.modules.channels import ChannelService, get_channel_service
+from app.modules.ledger import LedgerService, get_ledger_service
+from app.modules.orders.router import get_order_service
+from app.modules.orders.service import OrderService
 from app.modules.reconciliation.repository import ReconciliationRepository
 from app.modules.reconciliation.schemas import ReconciliationRead, ReconciliationRequest
 from app.modules.reconciliation.service import ReconciliationService
@@ -15,16 +14,27 @@ from app.modules.reconciliation.service import ReconciliationService
 router = APIRouter(prefix="/reconciliations", tags=["reconciliation"])
 
 
+def get_reconciliation_repository(
+    session: AsyncSession = Depends(get_session),
+) -> ReconciliationRepository:
+    return ReconciliationRepository(session)
+
+
 def get_reconciliation_service(
     session: AsyncSession = Depends(get_session),
+    repository: ReconciliationRepository = Depends(get_reconciliation_repository),
+    channel_service: ChannelService = Depends(get_channel_service),
+    order_service: OrderService = Depends(get_order_service),
+    ledger_service: LedgerService = Depends(get_ledger_service),
+    alert_service: AlertService = Depends(get_alert_service),
 ) -> ReconciliationService:
     return ReconciliationService(
         session=session,
-        repository=ReconciliationRepository(session),
-        channel_service=ChannelService(ChannelRepository(session)),
-        order_repository=OrderRepository(session),
-        ledger_repository=LedgerRepository(session),
-        alert_service=AlertService(session, AlertRepository(session)),
+        repository=repository,
+        channel_service=channel_service,
+        order_service=order_service,
+        ledger_service=ledger_service,
+        alert_service=alert_service,
     )
 
 

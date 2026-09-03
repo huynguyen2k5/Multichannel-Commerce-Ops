@@ -2,13 +2,9 @@ from fastapi import APIRouter, Depends, Query, Response, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.database import get_session
-from app.modules.alerts.repository import AlertRepository
-from app.modules.alerts.service import AlertService
-from app.modules.channels.repository import ChannelRepository
-from app.modules.channels.service import ChannelService
-from app.modules.inventory.service import InventoryService
-from app.modules.ledger.repository import LedgerRepository
-from app.modules.ledger.service import LedgerService
+from app.modules.channels import ChannelService, get_channel_service
+from app.modules.inventory import InventoryService, get_inventory_service
+from app.modules.ledger import LedgerService, get_ledger_service
 from app.modules.orders.repository import OrderRepository
 from app.modules.orders.schemas import (
     OrderDetail,
@@ -18,23 +14,25 @@ from app.modules.orders.schemas import (
     OrderRead,
 )
 from app.modules.orders.service import OrderService
-from app.modules.products.repository import ProductRepository
-from app.modules.products.service import ProductService
+from app.modules.products import ProductService, get_product_service
 
 router = APIRouter(prefix="/orders", tags=["orders"])
 
 
-def get_order_service(session: AsyncSession = Depends(get_session)) -> OrderService:
-    alert_service = AlertService(session, AlertRepository(session))
+def get_order_service(
+    session: AsyncSession = Depends(get_session),
+    channel_service: ChannelService = Depends(get_channel_service),
+    product_service: ProductService = Depends(get_product_service),
+    inventory_service: InventoryService = Depends(get_inventory_service),
+    ledger_service: LedgerService = Depends(get_ledger_service),
+) -> OrderService:
     return OrderService(
         session=session,
         repository=OrderRepository(session),
-        channel_service=ChannelService(ChannelRepository(session)),
-        product_service=ProductService(ProductRepository(session)),
-        inventory_service=InventoryService(
-            session, ProductRepository(session), alert_service=alert_service
-        ),
-        ledger_service=LedgerService(LedgerRepository(session)),
+        channel_service=channel_service,
+        product_service=product_service,
+        inventory_service=inventory_service,
+        ledger_service=ledger_service,
     )
 
 
