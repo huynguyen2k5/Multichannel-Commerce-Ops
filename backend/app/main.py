@@ -7,10 +7,10 @@ from fastapi.middleware.cors import CORSMiddleware
 from app.api.router import api_router
 from app.config import Settings, get_settings
 from app.database import engine
+from app.modules.mock_channels.router import router as mock_router
 from app.shared.error_handlers import install_error_handlers
 from app.shared.logging import configure_logging
 from app.shared.middleware import RequestContextMiddleware
-from app.modules.mock_channels.router import router as mock_router
 
 
 def create_app(settings: Settings | None = None) -> FastAPI:

@@ -1,8 +1,8 @@
 from datetime import datetime
 from decimal import Decimal
-from enum import Enum
+from enum import StrEnum
 
-from pydantic import BaseModel, Field, model_validator
+from pydantic import BaseModel, ConfigDict, Field, model_validator
 
 from app.modules.orders.models import OrderStatus
 
@@ -33,13 +33,11 @@ class OrderImportRequest(BaseModel):
             start=Decimal("0.00"),
         )
         if calculated_total != self.total_amount:
-            raise ValueError(
-                f"total_amount must equal the sum of item lines ({calculated_total})"
-            )
+            raise ValueError(f"total_amount must equal the sum of item lines ({calculated_total})")
         return self
 
 
-class OrderImportStatus(str, Enum):
+class OrderImportStatus(StrEnum):
     IMPORTED = "imported"
     DUPLICATE = "duplicate"
 
@@ -50,6 +48,8 @@ class OrderImportResponse(BaseModel):
 
 
 class OrderItemRead(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
     id: int
     product_id: int
     quantity: int
@@ -58,8 +58,11 @@ class OrderItemRead(BaseModel):
 
 
 class OrderRead(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
     id: int
     channel_id: int
+    channel: str
     external_order_id: str
     order_date: datetime
     status: OrderStatus
