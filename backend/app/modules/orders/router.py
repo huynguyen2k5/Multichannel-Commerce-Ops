@@ -5,6 +5,8 @@ from app.database import get_session
 from app.modules.channels.repository import ChannelRepository
 from app.modules.channels.service import ChannelService
 from app.modules.inventory.service import InventoryService
+from app.modules.ledger.repository import LedgerRepository
+from app.modules.ledger.service import LedgerService
 from app.modules.orders.repository import OrderRepository
 from app.modules.orders.schemas import OrderImportRequest, OrderImportResponse, OrderImportStatus
 from app.modules.orders.service import OrderService
@@ -21,6 +23,7 @@ def get_order_service(session: AsyncSession = Depends(get_session)) -> OrderServ
         channel_service=ChannelService(ChannelRepository(session)),
         product_service=ProductService(ProductRepository(session)),
         inventory_service=InventoryService(session, ProductRepository(session)),
+        ledger_service=LedgerService(LedgerRepository(session)),
     )
 
 
