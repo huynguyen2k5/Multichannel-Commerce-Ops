@@ -29,6 +29,6 @@ async def test_stock_crossing_threshold_creates_one_active_alert(session: AsyncS
     async with session.begin():
         await inventory.consume(product.id, 1)
 
-    active = await AlertRepository(session).list(resolved=False)
+    active = await AlertRepository(session).list_all(resolved=False)
     assert len(active) == 1
     assert active[0].dedup_key == "low_stock:CAP-WHT"
