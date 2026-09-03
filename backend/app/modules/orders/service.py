@@ -7,10 +7,10 @@ from app.modules.ledger.service import LedgerService
 from app.modules.orders.models import Order, OrderItem
 from app.modules.orders.repository import OrderRepository
 from app.modules.orders.schemas import (
+    OrderDetail,
     OrderImportRequest,
     OrderImportResponse,
     OrderImportStatus,
-    OrderDetail,
     OrderItemRead,
     OrderRead,
 )
@@ -37,23 +37,39 @@ class OrderService:
         self._inventory_service = inventory_service
         self._ledger_service = ledger_service
 
-
     async def list_orders(self, *, limit: int, offset: int) -> list[OrderRead]:
-        orders = await self._repository.list(limit=limit, offset=offset)
-        return [OrderRead.model_validate(order) for order in orders]
+        rows = await self._repository.list_with_channel(limit=limit, offset=offset)
+        return [self._to_read(order, channel) for order, channel in rows]
 
     async def get_order(self, order_id: int) -> OrderDetail:
-        order = await self._repository.get_by_id(order_id)
-        if order is None:
+        row = await self._repository.get_with_channel(order_id)
+        if row is None:
             raise NotFoundError(
                 "ORDER_NOT_FOUND",
                 f"Order id '{order_id}' does not exist",
                 details={"order_id": order_id},
             )
+        order, channel = row
         items = await self._repository.get_items(order_id)
         return OrderDetail(
-            **OrderRead.model_validate(order).model_dump(),
+            **self._to_read(order, channel).model_dump(),
             items=[OrderItemRead.model_validate(item) for item in items],
+        )
+
+    @staticmethod
+    def _to_read(order: Order, channel: str) -> OrderRead:
+        assert order.id is not None
+        return OrderRead(
+            id=order.id,
+            channel_id=order.channel_id,
+            channel=channel,
+            external_order_id=order.external_order_id,
+            order_date=order.order_date,
+            status=order.status,
+            total_amount=order.total_amount,
+            source_updated_at=order.source_updated_at,
+            created_at=order.created_at,
+            updated_at=order.updated_at,
         )
 
     async def import_order(self, payload: OrderImportRequest) -> OrderImportResponse:
