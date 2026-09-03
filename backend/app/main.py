@@ -10,6 +10,7 @@ from app.database import engine
 from app.shared.error_handlers import install_error_handlers
 from app.shared.logging import configure_logging
 from app.shared.middleware import RequestContextMiddleware
+from app.modules.mock_channels.router import router as mock_router
 
 
 def create_app(settings: Settings | None = None) -> FastAPI:
@@ -49,7 +50,8 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     async def health() -> dict[str, str]:
         return {"status": "ok"}
 
-    app.include_router(api_router)
+    app.include_router(api_router, prefix=settings.api_prefix)
+    app.include_router(mock_router)
     return app
 
 
