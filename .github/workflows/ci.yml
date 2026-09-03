@@ -1,0 +1,119 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  pr-title:
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Validate Conventional PR title
+        env:
+          PR_TITLE: ${{ github.event.pull_request.title }}
+        run: |
+          python - <<'PY'
+          import os
+          import re
+          import sys
+
+          title = os.environ["PR_TITLE"]
+          pattern = r"^(feat|fix|refactor|perf|test|docs|build|ci|chore|revert)(\([a-z0-9-]+\))?!?: .+"
+          if not re.match(pattern, title):
+              print(f"Invalid PR title: {title}")
+              print("Expected Conventional Commit style, e.g. feat(orders): implement idempotent import")
+              sys.exit(1)
+          PY
+
+  artifacts:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Validate n8n and architecture artifacts
+        run: python scripts/validate_artifacts.py
+      - name: Check architectural module boundaries
+        run: python scripts/check_module_boundaries.py
+
+  backend:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: backend
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Install backend
+        run: python -m pip install -e '.[dev]'
+      - name: Ruff
+        run: ruff check app tests
+      - name: Type check
+        run: mypy app
+      - name: Test
+        run: pytest
+      - name: Compile
+        run: python -m compileall -q app tests
+
+  migrations:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: mco
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres -d mco"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    defaults:
+      run:
+        working-directory: backend
+    env:
+      MCO_DATABASE_URL: postgresql+asyncpg://postgres:postgres@localhost:5432/mco
+      MCO_MIGRATION_DATABASE_URL: postgresql+psycopg://postgres:postgres@localhost:5432/mco
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Install backend
+        run: python -m pip install -e '.[dev]'
+      - name: Apply migrations
+        run: alembic upgrade head
+      - name: Seed demo catalog
+        run: python -m app.scripts.seed_demo
+
+  frontend:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 11
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: 'pnpm'
+      - name: Install frontend
+        run: pnpm install --frozen-lockfile
+      - name: Lint
+        run: pnpm --filter mco-frontend lint
+      - name: Test
+        run: pnpm --filter mco-frontend test
+      - name: Build
+        run: pnpm --filter mco-frontend build

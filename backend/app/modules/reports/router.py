@@ -11,8 +11,16 @@ from app.modules.reports.service import ReportsService
 router = APIRouter(prefix="/reports", tags=["reports"])
 
 
-def get_reports_service(session: AsyncSession = Depends(get_session)) -> ReportsService:
-    return ReportsService(ReportsRepository(session))
+def get_reports_repository(
+    session: AsyncSession = Depends(get_session),
+) -> ReportsRepository:
+    return ReportsRepository(session)
+
+
+def get_reports_service(
+    repository: ReportsRepository = Depends(get_reports_repository),
+) -> ReportsService:
+    return ReportsService(repository)
 
 
 @router.get("/daily", response_model=DailyReport)
