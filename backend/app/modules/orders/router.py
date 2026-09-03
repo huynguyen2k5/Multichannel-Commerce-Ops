@@ -2,6 +2,8 @@ from fastapi import APIRouter, Depends, Query, Response, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.database import get_session
+from app.modules.alerts.repository import AlertRepository
+from app.modules.alerts.service import AlertService
 from app.modules.channels.repository import ChannelRepository
 from app.modules.channels.service import ChannelService
 from app.modules.inventory.service import InventoryService
@@ -23,12 +25,15 @@ router = APIRouter(prefix="/orders", tags=["orders"])
 
 
 def get_order_service(session: AsyncSession = Depends(get_session)) -> OrderService:
+    alert_service = AlertService(session, AlertRepository(session))
     return OrderService(
         session=session,
         repository=OrderRepository(session),
         channel_service=ChannelService(ChannelRepository(session)),
         product_service=ProductService(ProductRepository(session)),
-        inventory_service=InventoryService(session, ProductRepository(session)),
+        inventory_service=InventoryService(
+            session, ProductRepository(session), alert_service=alert_service
+        ),
         ledger_service=LedgerService(LedgerRepository(session)),
     )
 

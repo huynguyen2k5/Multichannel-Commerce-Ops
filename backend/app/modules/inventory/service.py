@@ -2,6 +2,8 @@ from sqlalchemy import update
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlmodel import col
 
+from app.modules.alerts.schemas import LowStockAlertRequest
+from app.modules.alerts.service import AlertService
 from app.modules.inventory.schemas import InventoryItemRead
 from app.modules.products.models import Product
 from app.modules.products.repository import ProductRepository
@@ -10,9 +12,15 @@ from app.shared.time import utc_now
 
 
 class InventoryService:
-    def __init__(self, session: AsyncSession, product_repository: ProductRepository) -> None:
+    def __init__(
+        self,
+        session: AsyncSession,
+        product_repository: ProductRepository,
+        alert_service: AlertService | None = None,
+    ) -> None:
         self._session = session
         self._products = product_repository
+        self._alerts = alert_service
 
     async def consume(self, product_id: int, quantity: int) -> Product:
         if quantity <= 0:
@@ -30,6 +38,16 @@ class InventoryService:
         result = await self._session.execute(statement)
         product = result.scalar_one_or_none()
         if product is not None:
+            if self._alerts is not None:
+                await self._alerts.create_low_stock(
+                    LowStockAlertRequest(
+                        product_id=product.id,
+                        sku=product.sku,
+                        name=product.name,
+                        current_stock=product.current_stock,
+                        reorder_threshold=product.reorder_threshold,
+                    )
+                )
             return product
 
         existing = await self._products.get_by_id(product_id)
