@@ -1,14 +1,15 @@
 from datetime import datetime
 from decimal import Decimal
-from enum import Enum
+from enum import StrEnum
 
-from sqlalchemy import CheckConstraint, Column, Enum as SAEnum, Index, Numeric, UniqueConstraint
+from sqlalchemy import CheckConstraint, Column, Index, Numeric, UniqueConstraint
+from sqlalchemy import Enum as SAEnum
 from sqlmodel import Field, SQLModel
 
 from app.shared.time import utc_now
 
 
-class OrderStatus(str, Enum):
+class OrderStatus(StrEnum):
     PAID = "paid"
 
 
