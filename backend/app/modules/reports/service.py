@@ -23,7 +23,9 @@ class ReportsService:
             for code, name, orders, revenue, cogs in rows
         ]
         total_orders = sum(channel.orders for channel in channels)
-        total_revenue = sum((channel.revenue for channel in channels), start=Decimal("0.00"))
+        total_revenue = sum(
+            (channel.revenue for channel in channels), start=Decimal("0.00")
+        )
         total_cogs = sum((channel.cogs for channel in channels), start=Decimal("0.00"))
         return DailyReport(
             date=report_date,
