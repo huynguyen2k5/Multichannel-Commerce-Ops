@@ -1,9 +1,9 @@
 from datetime import UTC, date, datetime, time, timedelta
 from decimal import Decimal
 
-from sqlalchemy import case, func
+from sqlalchemy import case, func, select
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlmodel import select
+from sqlmodel import col
 
 from app.modules.channels.models import Channel
 from app.modules.ledger.models import LedgerEntry, LedgerEntryType
@@ -29,7 +29,7 @@ class ReportsRepository:
         revenue = func.coalesce(
             func.sum(
                 case(
-                    (LedgerEntry.entry_type == LedgerEntryType.REVENUE, LedgerEntry.amount),
+                    (col(LedgerEntry.entry_type) == LedgerEntryType.REVENUE, LedgerEntry.amount),
                     else_=0,
                 )
             ),
@@ -38,7 +38,7 @@ class ReportsRepository:
         cogs = func.coalesce(
             func.sum(
                 case(
-                    (LedgerEntry.entry_type == LedgerEntryType.COGS, LedgerEntry.amount),
+                    (col(LedgerEntry.entry_type) == LedgerEntryType.COGS, LedgerEntry.amount),
                     else_=0,
                 )
             ),
@@ -46,17 +46,17 @@ class ReportsRepository:
         )
         statement = (
             select(
-                Channel.code,
-                Channel.name,
-                func.count(func.distinct(Order.id)),
+                col(Channel.code),
+                col(Channel.name),
+                func.count(func.distinct(col(Order.id))),
                 revenue,
                 cogs,
             )
-            .join(Order, Order.channel_id == Channel.id)
-            .join(LedgerEntry, LedgerEntry.order_id == Order.id)
-            .where(Order.order_date >= start, Order.order_date < end)
-            .group_by(Channel.id, Channel.code, Channel.name)
-            .order_by(Channel.code)
+            .join(Order, col(Order.channel_id) == col(Channel.id))
+            .join(LedgerEntry, col(LedgerEntry.order_id) == col(Order.id))
+            .where(col(Order.order_date) >= start, col(Order.order_date) < end)
+            .group_by(col(Channel.id), col(Channel.code), col(Channel.name))
+            .order_by(col(Channel.code))
         )
         result = await self._session.execute(statement)
         return [
