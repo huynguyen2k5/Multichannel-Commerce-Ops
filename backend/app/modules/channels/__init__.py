@@ -1,0 +1,1 @@
+"""Commerce channel catalog domain."""
