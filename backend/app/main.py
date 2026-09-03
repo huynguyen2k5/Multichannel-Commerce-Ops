@@ -1,29 +1,51 @@
+from contextlib import asynccontextmanager
+from collections.abc import AsyncIterator
+
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from app.api.router import api_router
-from app.config import get_settings
-
-settings = get_settings()
-
-app = FastAPI(
-    title="Multichannel Commerce Operations API",
-    version="0.1.0",
-    description="Operational API for multichannel order, inventory, ledger, alert and reconciliation flows.",
-)
-
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=settings.cors_origin_list,
-    allow_credentials=False,
-    allow_methods=["GET", "POST", "PATCH", "OPTIONS"],
-    allow_headers=["Content-Type", "X-Request-ID"],
-)
+from app.config import Settings, get_settings
+from app.shared.error_handlers import install_error_handlers
+from app.shared.logging import configure_logging
+from app.shared.middleware import RequestContextMiddleware
 
 
-@app.get("/health", tags=["system"])
-async def health() -> dict[str, str]:
-    return {"status": "ok"}
+def create_app(settings: Settings | None = None) -> FastAPI:
+    settings = settings or get_settings()
+    configure_logging(settings.log_level)
+
+    @asynccontextmanager
+    async def lifespan(_: FastAPI) -> AsyncIterator[None]:
+        yield
+
+    app = FastAPI(
+        title="Multichannel Commerce Operations API",
+        version="0.1.0",
+        description=(
+            "Operational API for multichannel order, inventory, ledger, alert and reconciliation flows."
+        ),
+        lifespan=lifespan,
+    )
+    app.state.settings = settings
+
+    app.add_middleware(RequestContextMiddleware)
+    app.add_middleware(
+        CORSMiddleware,
+        allow_origins=settings.cors_origin_list,
+        allow_credentials=False,
+        allow_methods=["GET", "POST", "PATCH", "OPTIONS"],
+        allow_headers=["Content-Type", "X-Request-ID"],
+        expose_headers=["X-Request-ID"],
+    )
+    install_error_handlers(app)
+
+    @app.get("/health", tags=["system"])
+    async def health() -> dict[str, str]:
+        return {"status": "ok"}
+
+    app.include_router(api_router, prefix=settings.api_prefix)
+    return app
 
 
-app.include_router(api_router, prefix=settings.api_prefix)
+app = create_app()
