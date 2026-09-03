@@ -59,6 +59,9 @@ strict = true
 warn_unused_ignores = true
 exclude = ["alembic"]
 
+[tool.pyrefly.errors]
+"bad-override" = "ignore"
+
 [[tool.mypy.overrides]]
 module = ["sqlmodel.*"]
 ignore_missing_imports = true

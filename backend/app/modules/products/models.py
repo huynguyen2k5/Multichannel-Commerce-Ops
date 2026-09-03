@@ -1,6 +1,5 @@
 from datetime import datetime
 from decimal import Decimal
-from typing import Any, ClassVar
 
 from sqlalchemy import CheckConstraint, Column, Numeric, UniqueConstraint
 from sqlmodel import Field, SQLModel
@@ -9,7 +8,7 @@ from app.shared.time import Timestamptz, utc_now
 
 
 class Product(SQLModel, table=True):
-    __tablename__: ClassVar[Any] = "products"
+    __tablename__ = "products"  # pyrefly: ignore[bad-override]
     __table_args__ = (
         UniqueConstraint("sku", name="uq_products_sku"),
         CheckConstraint("cost_price >= 0", name="ck_products_cost_nonnegative"),

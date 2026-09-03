@@ -1,6 +1,5 @@
 from datetime import datetime
 from enum import StrEnum
-from typing import Any, ClassVar
 
 from sqlalchemy import Column, Index, Text, text
 from sqlalchemy import Enum as SAEnum
@@ -22,7 +21,7 @@ class AlertSeverity(StrEnum):
 
 
 class Alert(SQLModel, table=True):
-    __tablename__: ClassVar[Any] = "alerts"
+    __tablename__ = "alerts"  # pyrefly: ignore[bad-override]
     __table_args__ = (
         Index(
             "uq_alerts_active_dedup_key",

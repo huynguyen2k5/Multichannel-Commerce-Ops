@@ -1,5 +1,4 @@
 from datetime import datetime
-from typing import Any, ClassVar
 
 from sqlalchemy import UniqueConstraint
 from sqlmodel import Field, SQLModel
@@ -8,7 +7,7 @@ from app.shared.time import Timestamptz, utc_now
 
 
 class Channel(SQLModel, table=True):
-    __tablename__: ClassVar[Any] = "channels"
+    __tablename__ = "channels"  # pyrefly: ignore[bad-override]
     __table_args__ = (UniqueConstraint("code", name="uq_channels_code"),)
 
     id: int | None = Field(default=None, primary_key=True)
