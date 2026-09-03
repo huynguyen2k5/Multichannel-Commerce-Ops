@@ -79,8 +79,11 @@ class OrderService:
                     )
                 await self._repository.add_items(order_items)
 
-                for item in order_items:
-                    await self._inventory_service.consume(item.product_id, item.quantity)
+                for order_item in order_items:
+                    await self._inventory_service.consume(
+                        order_item.product_id,
+                        order_item.quantity,
+                    )
 
             return OrderImportResponse(
                 status=OrderImportStatus.IMPORTED,
