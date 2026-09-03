@@ -1,0 +1,19 @@
+{
+  "channel": "shopee",
+  "orders": [
+    {
+      "external_order_id": "SP-10001",
+      "order_date": "2026-09-01T02:00:00Z",
+      "status": "paid",
+      "total_amount": "500000.00",
+      "items": [{"sku": "TEE-BLK-M", "quantity": 2, "unit_price": "250000.00"}]
+    },
+    {
+      "external_order_id": "SP-10002",
+      "order_date": "2026-09-01T03:30:00Z",
+      "status": "paid",
+      "total_amount": "320000.00",
+      "items": [{"sku": "CAP-WHT", "quantity": 1, "unit_price": "320000.00"}]
+    }
+  ]
+}

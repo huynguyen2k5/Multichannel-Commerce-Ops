@@ -49,7 +49,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     async def health() -> dict[str, str]:
         return {"status": "ok"}
 
-    app.include_router(api_router, prefix=settings.api_prefix)
+    app.include_router(api_router)
     return app
 
 
