@@ -1,14 +1,15 @@
 from datetime import datetime
 from decimal import Decimal
-from enum import Enum
+from enum import StrEnum
 
-from sqlalchemy import CheckConstraint, Column, Enum as SAEnum, Numeric, UniqueConstraint
+from sqlalchemy import CheckConstraint, Column, Numeric, UniqueConstraint
+from sqlalchemy import Enum as SAEnum
 from sqlmodel import Field, SQLModel
 
 from app.shared.time import utc_now
 
 
-class LedgerEntryType(str, Enum):
+class LedgerEntryType(StrEnum):
     REVENUE = "revenue"
     COGS = "cogs"
 

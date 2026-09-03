@@ -1,7 +1,7 @@
 from collections.abc import Sequence
 
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlmodel import select
+from sqlmodel import col, select
 
 from app.modules.ledger.models import LedgerEntry
 
@@ -26,6 +26,6 @@ class LedgerRepository:
         if not order_ids:
             return []
         result = await self._session.execute(
-            select(LedgerEntry).where(LedgerEntry.order_id.in_(order_ids))
+            select(LedgerEntry).where(col(LedgerEntry.order_id).in_(order_ids))
         )
         return list(result.scalars().all())
