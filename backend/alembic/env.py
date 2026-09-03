@@ -6,14 +6,8 @@ from sqlmodel import SQLModel
 
 from app.config import get_settings
 
-# Model modules are imported so SQLModel metadata is populated before autogenerate runs.
-# New modules should be added here only when they introduce persisted tables.
-from app.modules.alerts import models as alert_models  # noqa: F401,E402
-from app.modules.channels import models as channel_models  # noqa: F401,E402
-from app.modules.ledger import models as ledger_models  # noqa: F401,E402
-from app.modules.orders import models as order_models  # noqa: F401,E402
-from app.modules.products import models as product_models  # noqa: F401,E402
-from app.modules.reconciliation import models as reconciliation_models  # noqa: F401,E402
+import app.models  # noqa: F401,E402
+
 
 config = context.config
 if config.config_file_name is not None:
