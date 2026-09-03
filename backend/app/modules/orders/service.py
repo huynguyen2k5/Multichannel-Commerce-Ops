@@ -3,6 +3,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.modules.channels.service import ChannelService
 from app.modules.inventory.service import InventoryService
+from app.modules.ledger.service import LedgerService
 from app.modules.orders.models import Order, OrderItem
 from app.modules.orders.repository import OrderRepository
 from app.modules.orders.schemas import (
@@ -23,12 +24,14 @@ class OrderService:
         channel_service: ChannelService,
         product_service: ProductService,
         inventory_service: InventoryService,
+        ledger_service: LedgerService,
     ) -> None:
         self._session = session
         self._repository = repository
         self._channel_service = channel_service
         self._product_service = product_service
         self._inventory_service = inventory_service
+        self._ledger_service = ledger_service
 
     async def import_order(self, payload: OrderImportRequest) -> OrderImportResponse:
         try:
@@ -84,6 +87,8 @@ class OrderService:
                         order_item.product_id,
                         order_item.quantity,
                     )
+
+                await self._ledger_service.record_sale(order, order_items)
 
             return OrderImportResponse(
                 status=OrderImportStatus.IMPORTED,

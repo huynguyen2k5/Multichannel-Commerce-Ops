@@ -7,6 +7,8 @@ from app.modules.channels.models import Channel
 from app.modules.channels.repository import ChannelRepository
 from app.modules.channels.service import ChannelService
 from app.modules.inventory.service import InventoryService
+from app.modules.ledger.repository import LedgerRepository
+from app.modules.ledger.service import LedgerService
 from app.modules.orders.repository import OrderRepository
 from app.modules.orders.schemas import OrderImportRequest, OrderImportStatus
 from app.modules.orders.service import OrderService
@@ -22,6 +24,7 @@ async def _service(session: AsyncSession) -> OrderService:
         ChannelService(ChannelRepository(session)),
         ProductService(ProductRepository(session)),
         InventoryService(session, ProductRepository(session)),
+        LedgerService(LedgerRepository(session)),
     )
 
 
@@ -57,6 +60,9 @@ async def test_same_order_import_is_a_no_op_on_retry(session: AsyncSession) -> N
     product = await ProductRepository(session).get_by_sku("TEE-BLK-M")
     assert product is not None
     assert product.current_stock == 8
+
+    entries = await LedgerRepository(session).get_for_order(first.order_id)
+    assert len(entries) == 2
 
 
 async def test_insufficient_stock_rolls_back_order(session: AsyncSession) -> None:
