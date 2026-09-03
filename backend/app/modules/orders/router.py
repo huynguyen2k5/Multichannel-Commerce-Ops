@@ -4,6 +4,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.database import get_session
 from app.modules.channels.repository import ChannelRepository
 from app.modules.channels.service import ChannelService
+from app.modules.inventory.service import InventoryService
 from app.modules.orders.repository import OrderRepository
 from app.modules.orders.schemas import OrderImportRequest, OrderImportResponse, OrderImportStatus
 from app.modules.orders.service import OrderService
@@ -19,6 +20,7 @@ def get_order_service(session: AsyncSession = Depends(get_session)) -> OrderServ
         repository=OrderRepository(session),
         channel_service=ChannelService(ChannelRepository(session)),
         product_service=ProductService(ProductRepository(session)),
+        inventory_service=InventoryService(session, ProductRepository(session)),
     )
 
 
