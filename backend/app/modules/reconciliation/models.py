@@ -2,11 +2,11 @@ from datetime import datetime
 from enum import StrEnum
 from typing import Any
 
-from sqlalchemy import JSON, Column, DateTime, Index
+from sqlalchemy import JSON, Column, Index
 from sqlalchemy import Enum as SAEnum
 from sqlmodel import Field, SQLModel
 
-from app.shared.time import utc_now
+from app.shared.time import Timestamptz, utc_now
 
 
 class ReconciliationStatus(StrEnum):
@@ -33,11 +33,5 @@ class ReconciliationLog(SQLModel, table=True):
         default_factory=dict,
         sa_column=Column(JSON, nullable=False),
     )
-    started_at: datetime = Field(
-        default_factory=utc_now,
-        sa_column=Column(DateTime(timezone=True), nullable=False),
-    )
-    completed_at: datetime = Field(
-        default_factory=utc_now,
-        sa_column=Column(DateTime(timezone=True), nullable=False),
-    )
+    started_at: datetime = Field(default_factory=utc_now, sa_type=Timestamptz)
+    completed_at: datetime = Field(default_factory=utc_now, sa_type=Timestamptz)

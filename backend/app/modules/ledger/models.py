@@ -2,11 +2,11 @@ from datetime import datetime
 from decimal import Decimal
 from enum import StrEnum
 
-from sqlalchemy import CheckConstraint, Column, DateTime, Numeric, UniqueConstraint
+from sqlalchemy import CheckConstraint, Column, Numeric, UniqueConstraint
 from sqlalchemy import Enum as SAEnum
 from sqlmodel import Field, SQLModel
 
-from app.shared.time import utc_now
+from app.shared.time import Timestamptz, utc_now
 
 
 class LedgerEntryType(StrEnum):
@@ -30,7 +30,4 @@ class LedgerEntry(SQLModel, table=True):
         )
     )
     amount: Decimal = Field(sa_column=Column(Numeric(14, 2), nullable=False))
-    created_at: datetime = Field(
-        default_factory=utc_now,
-        sa_column=Column(DateTime(timezone=True), nullable=False),
-    )
+    created_at: datetime = Field(default_factory=utc_now, sa_type=Timestamptz)

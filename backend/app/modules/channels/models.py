@@ -1,9 +1,9 @@
 from datetime import datetime
 
-from sqlalchemy import Column, DateTime, UniqueConstraint
+from sqlalchemy import UniqueConstraint
 from sqlmodel import Field, SQLModel
 
-from app.shared.time import utc_now
+from app.shared.time import Timestamptz, utc_now
 
 
 class Channel(SQLModel, table=True):
@@ -14,7 +14,4 @@ class Channel(SQLModel, table=True):
     code: str = Field(min_length=1, max_length=32, index=True)
     name: str = Field(min_length=1, max_length=100)
     platform_type: str = Field(min_length=1, max_length=32)
-    created_at: datetime = Field(
-        default_factory=utc_now,
-        sa_column=Column(DateTime(timezone=True), nullable=False),
-    )
+    created_at: datetime = Field(default_factory=utc_now, sa_type=Timestamptz)

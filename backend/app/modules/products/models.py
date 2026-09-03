@@ -1,10 +1,10 @@
 from datetime import datetime
 from decimal import Decimal
 
-from sqlalchemy import CheckConstraint, Column, DateTime, Numeric, UniqueConstraint
+from sqlalchemy import CheckConstraint, Column, Numeric, UniqueConstraint
 from sqlmodel import Field, SQLModel
 
-from app.shared.time import utc_now
+from app.shared.time import Timestamptz, utc_now
 
 
 class Product(SQLModel, table=True):
@@ -22,11 +22,5 @@ class Product(SQLModel, table=True):
     cost_price: Decimal = Field(sa_column=Column(Numeric(14, 2), nullable=False))
     current_stock: int = Field(default=0, nullable=False)
     reorder_threshold: int = Field(default=0, nullable=False)
-    created_at: datetime = Field(
-        default_factory=utc_now,
-        sa_column=Column(DateTime(timezone=True), nullable=False),
-    )
-    updated_at: datetime = Field(
-        default_factory=utc_now,
-        sa_column=Column(DateTime(timezone=True), nullable=False),
-    )
+    created_at: datetime = Field(default_factory=utc_now, sa_type=Timestamptz)
+    updated_at: datetime = Field(default_factory=utc_now, sa_type=Timestamptz)

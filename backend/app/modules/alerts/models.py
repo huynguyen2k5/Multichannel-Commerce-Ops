@@ -1,11 +1,11 @@
 from datetime import datetime
 from enum import StrEnum
 
-from sqlalchemy import Column, DateTime, Index, Text, text
+from sqlalchemy import Column, Index, Text, text
 from sqlalchemy import Enum as SAEnum
 from sqlmodel import Field, SQLModel
 
-from app.shared.time import utc_now
+from app.shared.time import Timestamptz, utc_now
 
 
 class AlertType(StrEnum):
@@ -43,15 +43,6 @@ class Alert(SQLModel, table=True):
     dedup_key: str = Field(min_length=1, max_length=200, nullable=False)
     message: str = Field(sa_column=Column(Text, nullable=False))
     resolved: bool = Field(default=False, nullable=False, index=True)
-    created_at: datetime = Field(
-        default_factory=utc_now,
-        sa_column=Column(DateTime(timezone=True), nullable=False),
-    )
-    resolved_at: datetime | None = Field(
-        default=None,
-        sa_column=Column(DateTime(timezone=True), nullable=True),
-    )
-    notified_at: datetime | None = Field(
-        default=None,
-        sa_column=Column(DateTime(timezone=True), nullable=True),
-    )
+    created_at: datetime = Field(default_factory=utc_now, sa_type=Timestamptz)
+    resolved_at: datetime | None = Field(default=None, sa_type=Timestamptz)
+    notified_at: datetime | None = Field(default=None, sa_type=Timestamptz)
