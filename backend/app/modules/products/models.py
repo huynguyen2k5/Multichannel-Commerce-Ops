@@ -4,11 +4,11 @@ from decimal import Decimal
 from sqlalchemy import CheckConstraint, Column, Numeric, UniqueConstraint
 from sqlmodel import Field, SQLModel
 
-from app.shared.time import utc_now
+from app.shared.time import Timestamptz, utc_now
 
 
 class Product(SQLModel, table=True):
-    __tablename__ = "products"
+    __tablename__ = "products"  # pyrefly: ignore[bad-override]
     __table_args__ = (
         UniqueConstraint("sku", name="uq_products_sku"),
         CheckConstraint("cost_price >= 0", name="ck_products_cost_nonnegative"),
@@ -22,5 +22,5 @@ class Product(SQLModel, table=True):
     cost_price: Decimal = Field(sa_column=Column(Numeric(14, 2), nullable=False))
     current_stock: int = Field(default=0, nullable=False)
     reorder_threshold: int = Field(default=0, nullable=False)
-    created_at: datetime = Field(default_factory=utc_now, nullable=False)
-    updated_at: datetime = Field(default_factory=utc_now, nullable=False)
+    created_at: datetime = Field(default_factory=utc_now, sa_type=Timestamptz)
+    updated_at: datetime = Field(default_factory=utc_now, sa_type=Timestamptz)

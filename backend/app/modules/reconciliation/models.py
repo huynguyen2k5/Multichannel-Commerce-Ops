@@ -6,7 +6,7 @@ from sqlalchemy import JSON, Column, Index
 from sqlalchemy import Enum as SAEnum
 from sqlmodel import Field, SQLModel
 
-from app.shared.time import utc_now
+from app.shared.time import Timestamptz, utc_now
 
 
 class ReconciliationStatus(StrEnum):
@@ -16,7 +16,7 @@ class ReconciliationStatus(StrEnum):
 
 
 class ReconciliationLog(SQLModel, table=True):
-    __tablename__ = "reconciliation_logs"
+    __tablename__ = "reconciliation_logs"  # pyrefly: ignore[bad-override]
     __table_args__ = (Index("ix_reconciliation_logs_started_at", "started_at"),)
 
     id: int | None = Field(default=None, primary_key=True)
@@ -33,5 +33,5 @@ class ReconciliationLog(SQLModel, table=True):
         default_factory=dict,
         sa_column=Column(JSON, nullable=False),
     )
-    started_at: datetime = Field(default_factory=utc_now, nullable=False)
-    completed_at: datetime = Field(default_factory=utc_now, nullable=False)
+    started_at: datetime = Field(default_factory=utc_now, sa_type=Timestamptz)
+    completed_at: datetime = Field(default_factory=utc_now, sa_type=Timestamptz)

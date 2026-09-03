@@ -6,7 +6,7 @@ from sqlalchemy import CheckConstraint, Column, Numeric, UniqueConstraint
 from sqlalchemy import Enum as SAEnum
 from sqlmodel import Field, SQLModel
 
-from app.shared.time import utc_now
+from app.shared.time import Timestamptz, utc_now
 
 
 class LedgerEntryType(StrEnum):
@@ -15,7 +15,7 @@ class LedgerEntryType(StrEnum):
 
 
 class LedgerEntry(SQLModel, table=True):
-    __tablename__ = "ledger_entries"
+    __tablename__ = "ledger_entries"  # pyrefly: ignore[bad-override]
     __table_args__ = (
         UniqueConstraint("order_id", "entry_type", name="uq_ledger_order_entry_type"),
         CheckConstraint("amount >= 0", name="ck_ledger_amount_nonnegative"),
@@ -30,4 +30,4 @@ class LedgerEntry(SQLModel, table=True):
         )
     )
     amount: Decimal = Field(sa_column=Column(Numeric(14, 2), nullable=False))
-    created_at: datetime = Field(default_factory=utc_now, nullable=False)
+    created_at: datetime = Field(default_factory=utc_now, sa_type=Timestamptz)

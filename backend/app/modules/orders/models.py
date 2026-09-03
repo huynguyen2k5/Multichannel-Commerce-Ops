@@ -6,7 +6,7 @@ from sqlalchemy import CheckConstraint, Column, Index, Numeric, UniqueConstraint
 from sqlalchemy import Enum as SAEnum
 from sqlmodel import Field, SQLModel
 
-from app.shared.time import utc_now
+from app.shared.time import Timestamptz, utc_now
 
 
 class OrderStatus(StrEnum):
@@ -14,7 +14,7 @@ class OrderStatus(StrEnum):
 
 
 class Order(SQLModel, table=True):
-    __tablename__ = "orders"
+    __tablename__ = "orders"  # pyrefly: ignore[bad-override]
     __table_args__ = (
         UniqueConstraint(
             "channel_id",
@@ -28,19 +28,19 @@ class Order(SQLModel, table=True):
     id: int | None = Field(default=None, primary_key=True)
     channel_id: int = Field(foreign_key="channels.id", index=True, nullable=False)
     external_order_id: str = Field(min_length=1, max_length=100)
-    order_date: datetime = Field(nullable=False)
+    order_date: datetime = Field(sa_type=Timestamptz)
     status: OrderStatus = Field(
         default=OrderStatus.PAID,
         sa_column=Column(SAEnum(OrderStatus, native_enum=False, length=16), nullable=False),
     )
     total_amount: Decimal = Field(sa_column=Column(Numeric(14, 2), nullable=False))
-    source_updated_at: datetime | None = Field(default=None, nullable=True)
-    created_at: datetime = Field(default_factory=utc_now, nullable=False)
-    updated_at: datetime = Field(default_factory=utc_now, nullable=False)
+    source_updated_at: datetime | None = Field(default=None, sa_type=Timestamptz)
+    created_at: datetime = Field(default_factory=utc_now, sa_type=Timestamptz)
+    updated_at: datetime = Field(default_factory=utc_now, sa_type=Timestamptz)
 
 
 class OrderItem(SQLModel, table=True):
-    __tablename__ = "order_items"
+    __tablename__ = "order_items"  # pyrefly: ignore[bad-override]
     __table_args__ = (
         CheckConstraint("quantity > 0", name="ck_order_items_quantity_positive"),
         CheckConstraint("unit_price >= 0", name="ck_order_items_price_nonnegative"),
