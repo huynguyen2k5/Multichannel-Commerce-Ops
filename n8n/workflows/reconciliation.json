@@ -1,0 +1,75 @@
+{
+  "name": "MCO - Reconciliation",
+  "nodes": [
+    {
+      "parameters": {"rule": {"interval": [{"field": "hours", "hoursInterval": 6}]}},
+      "id": "schedule",
+      "name": "Every 6 Hours",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [0, 0]
+    },
+    {
+      "parameters": {"jsCode": "return ['shopee','tiktok','website'].map(channel => ({ json: { channel } }));"},
+      "id": "channels",
+      "name": "Supported Channels",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [240, 0]
+    },
+    {
+      "parameters": {
+        "url": "={{ $env.MCO_API_BASE_URL + '/mock/v1/' + $json.channel + '/orders' }}",
+        "options": {"timeout": 10000}
+      },
+      "id": "fetch",
+      "name": "Fetch Source Snapshot",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [500, 0],
+      "retryOnFail": true,
+      "maxTries": 3,
+      "waitBetweenTries": 1500
+    },
+    {
+      "parameters": {
+        "jsCode": "return $input.all().map(item => ({ json: { source_system: item.json.channel, orders: (item.json.orders ?? []).map(order => ({ external_order_id: order.external_order_id, total_amount: order.total_amount })) } }));"
+      },
+      "id": "contract",
+      "name": "Build Reconciliation Contract",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [760, 0]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $env.MCO_API_BASE_URL + '/api/v1/reconciliations' }}",
+        "sendBody": true,
+        "contentType": "raw",
+        "rawContentType": "application/json",
+        "body": "={{ JSON.stringify($json) }}",
+        "options": {"timeout": 15000}
+      },
+      "id": "reconcile",
+      "name": "Run Reconciliation",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [1040, 0],
+      "retryOnFail": true,
+      "maxTries": 2,
+      "waitBetweenTries": 2000
+    }
+  ],
+  "connections": {
+    "Every 6 Hours": {"main": [[{"node": "Supported Channels", "type": "main", "index": 0}]]},
+    "Supported Channels": {"main": [[{"node": "Fetch Source Snapshot", "type": "main", "index": 0}]]},
+    "Fetch Source Snapshot": {"main": [[{"node": "Build Reconciliation Contract", "type": "main", "index": 0}]]},
+    "Build Reconciliation Contract": {"main": [[{"node": "Run Reconciliation", "type": "main", "index": 0}]]}
+  },
+  "active": false,
+  "settings": {"executionOrder": "v1"},
+  "versionId": "mco-reconciliation-v1",
+  "meta": {"templateCredsSetupCompleted": true},
+  "tags": []
+}

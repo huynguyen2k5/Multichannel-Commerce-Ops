@@ -1,0 +1,77 @@
+{
+  "name": "MCO - Multichannel Order Sync",
+  "nodes": [
+    {
+      "parameters": {"rule": {"interval": [{"field": "minutes", "minutesInterval": 15}]}},
+      "id": "schedule",
+      "name": "Every 15 Minutes",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [0, 0]
+    },
+    {
+      "parameters": {
+        "jsCode": "return ['shopee','tiktok','website'].map(channel => ({ json: { channel } }));"
+      },
+      "id": "channels",
+      "name": "Supported Channels",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [240, 0]
+    },
+    {
+      "parameters": {
+        "url": "={{ $env.MCO_API_BASE_URL + '/mock/v1/' + $json.channel + '/orders' }}",
+        "options": {"timeout": 10000}
+      },
+      "id": "fetch",
+      "name": "Fetch Source Orders",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [500, 0],
+      "retryOnFail": true,
+      "maxTries": 3,
+      "waitBetweenTries": 1500
+    },
+    {
+      "parameters": {
+        "jsCode": "const feeds = $input.all();\nconst output = [];\nfor (const item of feeds) {\n  const feed = item.json;\n  for (const order of feed.orders ?? []) {\n    output.push({ json: { channel: feed.channel, ...order } });\n  }\n}\nreturn output;"
+      },
+      "id": "normalize",
+      "name": "Normalize Import Payloads",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [760, 0]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $env.MCO_API_BASE_URL + '/api/v1/orders/import' }}",
+        "sendBody": true,
+        "contentType": "raw",
+        "rawContentType": "application/json",
+        "body": "={{ JSON.stringify($json) }}",
+        "options": {"timeout": 10000}
+      },
+      "id": "import",
+      "name": "Import Order",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [1040, 0],
+      "retryOnFail": true,
+      "maxTries": 3,
+      "waitBetweenTries": 1500
+    }
+  ],
+  "connections": {
+    "Every 15 Minutes": {"main": [[{"node": "Supported Channels", "type": "main", "index": 0}]]},
+    "Supported Channels": {"main": [[{"node": "Fetch Source Orders", "type": "main", "index": 0}]]},
+    "Fetch Source Orders": {"main": [[{"node": "Normalize Import Payloads", "type": "main", "index": 0}]]},
+    "Normalize Import Payloads": {"main": [[{"node": "Import Order", "type": "main", "index": 0}]]}
+  },
+  "active": false,
+  "settings": {"executionOrder": "v1"},
+  "versionId": "mco-order-sync-v1",
+  "meta": {"templateCredsSetupCompleted": true},
+  "tags": []
+}
