@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, Response, status
+from fastapi import APIRouter, Depends, Query, Response, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.database import get_session
@@ -8,7 +8,13 @@ from app.modules.inventory.service import InventoryService
 from app.modules.ledger.repository import LedgerRepository
 from app.modules.ledger.service import LedgerService
 from app.modules.orders.repository import OrderRepository
-from app.modules.orders.schemas import OrderImportRequest, OrderImportResponse, OrderImportStatus
+from app.modules.orders.schemas import (
+    OrderDetail,
+    OrderImportRequest,
+    OrderImportResponse,
+    OrderImportStatus,
+    OrderRead,
+)
 from app.modules.orders.service import OrderService
 from app.modules.products.repository import ProductRepository
 from app.modules.products.service import ProductService
@@ -37,3 +43,20 @@ async def import_order(
     if result.status is OrderImportStatus.DUPLICATE:
         response.status_code = status.HTTP_200_OK
     return result
+
+
+@router.get("", response_model=list[OrderRead])
+async def list_orders(
+    limit: int = Query(default=50, ge=1, le=100),
+    offset: int = Query(default=0, ge=0),
+    service: OrderService = Depends(get_order_service),
+) -> list[OrderRead]:
+    return await service.list_orders(limit=limit, offset=offset)
+
+
+@router.get("/{order_id}", response_model=OrderDetail)
+async def get_order(
+    order_id: int,
+    service: OrderService = Depends(get_order_service),
+) -> OrderDetail:
+    return await service.get_order(order_id)
