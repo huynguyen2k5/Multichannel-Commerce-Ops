@@ -3,7 +3,7 @@ import { Button } from "@/components/Button"
 
 export interface ConfirmDialogProps {
   title: string
-  description?: string
+  description?: React.ReactNode
   confirmLabel?: string
   cancelLabel?: string
   variant?: "primary" | "danger"
@@ -46,7 +46,7 @@ export function ConfirmDialog({
           </button>
         </div>
         {description && (
-          <p className="px-5 pb-4 text-sm text-text-secondary leading-relaxed border-b border-border">{description}</p>
+          <div className="px-5 pb-4 text-sm text-text-secondary leading-relaxed border-b border-border">{description}</div>
         )}
         <div className="flex items-center justify-end gap-2 px-5 py-4">
           <Button variant="secondary" size="sm" onClick={onCancel} disabled={loading}>

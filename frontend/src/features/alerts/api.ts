@@ -18,10 +18,13 @@ export const alertSchema = z.object({
 const alertsSchema = z.array(alertSchema)
 export type Alert = z.infer<typeof alertSchema>
 
-export function useAlerts(resolved = false) {
+export function useAlerts(resolved?: boolean) {
   return useQuery({
     queryKey: ['alerts', { resolved }],
-    queryFn: () => apiRequest(`/alerts?resolved=${String(resolved)}`, alertsSchema),
+    queryFn: () => {
+      const query = resolved !== undefined ? `?resolved=${String(resolved)}` : ''
+      return apiRequest(`/alerts${query}`, alertsSchema)
+    },
   })
 }
 
