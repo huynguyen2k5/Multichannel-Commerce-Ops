@@ -8,42 +8,11 @@ on:
 
 permissions:
   contents: read
+  pull-requests: read
 
 jobs:
-  pr-title:
-    if: github.event_name == 'pull_request'
-    runs-on: ubuntu-latest
-    steps:
-      - name: Validate Conventional PR title
-        env:
-          PR_TITLE: ${{ github.event.pull_request.title }}
-        run: |
-          python - <<'PY'
-          import os
-          import re
-          import sys
-
-          title = os.environ["PR_TITLE"]
-          pattern = r"^(feat|fix|refactor|perf|test|docs|build|ci|chore|revert)(\([a-z0-9-]+\))?!?: .+"
-          if not re.match(pattern, title):
-              print(f"Invalid PR title: {title}")
-              print("Expected Conventional Commit style, e.g. feat(orders): implement idempotent import")
-              sys.exit(1)
-          PY
-
-  artifacts:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
-        with:
-          python-version: '3.12'
-      - name: Validate n8n and architecture artifacts
-        run: python scripts/validate_artifacts.py
-      - name: Check architectural module boundaries
-        run: python scripts/check_module_boundaries.py
-
-  backend:
+  backend-quality:
+    name: Backend Quality (Lint, Types, SQLite Unit)
     runs-on: ubuntu-latest
     defaults:
       run:
@@ -53,18 +22,19 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: '3.12'
-      - name: Install backend
+          cache: 'pip'
+          cache-dependency-path: 'backend/pyproject.toml'
+      - name: Install backend dependencies
         run: python -m pip install -e '.[dev]'
-      - name: Ruff
+      - name: Lint with Ruff
         run: ruff check app tests
-      - name: Type check
+      - name: Type check with Mypy
         run: mypy app
-      - name: Test
-        run: python -m pytest
-      - name: Compile
-        run: python -m compileall -q app tests
+      - name: Run SQLite Unit Tests
+        run: python -m pytest tests/modules tests/test_*.py -v
 
-  migrations:
+  postgres-integration:
+    name: PostgreSQL Integration (Migrations & Seed)
     runs-on: ubuntu-latest
     services:
       postgres:
@@ -91,14 +61,18 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: '3.12'
-      - name: Install backend
+          cache: 'pip'
+          cache-dependency-path: 'backend/pyproject.toml'
+      - name: Install backend dependencies
         run: python -m pip install -e '.[dev]'
-      - name: Apply migrations
+      - name: Apply Alembic migrations
         run: alembic upgrade head
-      - name: Seed demo catalog
+      - name: Seed demo catalog and channels
         run: python -m app.scripts.seed_demo
 
-  frontend:
+  frontend-quality:
+    name: Frontend Quality (Lint & Vitest)
+    needs: [backend-quality]
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -109,11 +83,233 @@ jobs:
         with:
           node-version: '22'
           cache: 'pnpm'
-      - name: Install frontend
+      - name: Install frontend dependencies
         run: pnpm install --frozen-lockfile
-      - name: Lint
+      - name: Lint Frontend
         run: pnpm --filter mco-frontend lint
-      - name: Test
+      - name: Run Vitest Unit Tests
         run: pnpm --filter mco-frontend test
-      - name: Build
+
+  database-transactions:
+    name: Database / Transactions (Invariants & Rollback)
+    needs: [postgres-integration]
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: mco
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres -d mco"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    defaults:
+      run:
+        working-directory: backend
+    env:
+      MCO_DATABASE_URL: postgresql+asyncpg://postgres:postgres@127.0.0.1:5432/mco
+      MCO_MIGRATION_DATABASE_URL: postgresql+psycopg://postgres:postgres@127.0.0.1:5432/mco
+      MCO_TEST_POSTGRES_URL: postgresql+psycopg://postgres:postgres@127.0.0.1:5432/mco
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+          cache: 'pip'
+          cache-dependency-path: 'backend/pyproject.toml'
+      - name: Install backend dependencies
+        run: python -m pip install -e '.[dev]'
+      - name: Run PostgreSQL E2E Pipeline and Invariant Tests
+        run: >-
+          python -m pytest
+          tests/integration/test_postgres_commerce_pipeline.py
+          tests/integration/test_commerce_pipeline.py
+          tests/modules/orders/test_transaction_integrity.py
+          tests/modules/inventory/test_inventory_service.py
+          -v
+
+  architecture-validation:
+    name: Architecture Validation (Boundaries & Shielding)
+    needs: [frontend-quality, database-transactions]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+          cache: 'pip'
+          cache-dependency-path: 'backend/pyproject.toml'
+      - name: Check architectural module boundaries
+        run: python scripts/check_module_boundaries.py
+      - name: Run architecture test suite
+        run: |
+          cd backend
+          python -m pip install -e '.[dev]'
+          python -m pytest tests/architecture -v
+
+  artifact-validation:
+    name: Artifact Validation (n8n & Architecture Diagrams)
+    needs: [frontend-quality, database-transactions]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Validate n8n and architecture artifacts
+        run: python scripts/validate_artifacts.py
+
+  production-build:
+    name: Production Build (Vite Bundle & Bytecode Compilation)
+    needs: [architecture-validation, artifact-validation]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 11
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: 'pnpm'
+      - name: Install frontend dependencies
+        run: pnpm install --frozen-lockfile
+      - name: Build frontend production bundle
         run: pnpm --filter mco-frontend build
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Compile backend Python bytecode
+        run: python -m compileall -q backend/app backend/tests
+
+  pr-policy-check:
+    name: PR Policy Check (Conventional Title & Scope Guard)
+    needs: [production-build]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Validate Conventional PR Title
+        if: github.event_name == 'pull_request'
+        env:
+          PR_TITLE: ${{ github.event.pull_request.title }}
+        run: |
+          python - <<'PY'
+          import os
+          import re
+          import sys
+
+          title = os.environ.get("PR_TITLE", "")
+          pattern = r"^(feat|fix|refactor|perf|test|docs|build|ci|chore|revert)(\([a-z0-9-]+\))?!?: .+"
+          if not re.match(pattern, title):
+              print(f"Invalid PR title: '{title}'")
+              print("Expected Conventional Commit style, e.g. feat(infra): add local container baseline")
+              sys.exit(1)
+          print(f"Valid Conventional PR title: {title}")
+          PY
+      - name: Enforce Single Root README Policy
+        run: |
+          python - <<'PY'
+          import subprocess
+          import sys
+
+          res = subprocess.run(["git", "ls-files", "*README*", "*readme*"], capture_output=True, text=True)
+          readmes = [f for f in res.stdout.strip().splitlines() if f and f.lower().endswith("readme.md")]
+          if len(readmes) != 1 or readmes[0] != "README.md":
+              print("Policy violation: Exactly 1 root README.md is permitted.")
+              for r in readmes:
+                  print(f"  found: {r}")
+              sys.exit(1)
+          print("Verified: Exactly 1 root README.md tracked in repository.")
+          PY
+      - name: Enforce Secret & Env File Ignored Policy
+        run: |
+          python - <<'PY'
+          import subprocess
+          import sys
+
+          res = subprocess.run(["git", "ls-files", "*.env", "**/.env"], capture_output=True, text=True)
+          tracked_envs = [f for f in res.stdout.strip().splitlines() if f and not f.endswith(".example")]
+          if tracked_envs:
+              print(f"Policy violation: .env files tracked in git: {tracked_envs}")
+              sys.exit(1)
+          print("Verified: No active .env files tracked in git.")
+          PY
+
+  mco-quality-gate:
+    name: MCO Quality Gate
+    needs:
+      - backend-quality
+      - frontend-quality
+      - postgres-integration
+      - database-transactions
+      - architecture-validation
+      - artifact-validation
+      - production-build
+      - pr-policy-check
+    if: always()
+    runs-on: ubuntu-latest
+    steps:
+      - name: Evaluate All Quality Gates
+        env:
+          BACKEND_STATUS: ${{ needs.backend-quality.result }}
+          FRONTEND_STATUS: ${{ needs.frontend-quality.result }}
+          POSTGRES_STATUS: ${{ needs.postgres-integration.result }}
+          DATABASE_TX_STATUS: ${{ needs.database-transactions.result }}
+          ARCHITECTURE_STATUS: ${{ needs.architecture-validation.result }}
+          ARTIFACT_STATUS: ${{ needs.artifact-validation.result }}
+          PROD_BUILD_STATUS: ${{ needs.production-build.result }}
+          PR_POLICY_STATUS: ${{ needs.pr-policy-check.result }}
+        run: |
+          python - <<'PY'
+          import os
+          import sys
+
+          gates = {
+              "Backend Quality (Lint, Types, SQLite Unit)": os.environ.get("BACKEND_STATUS"),
+              "PostgreSQL Integration (Migrations & Seed)": os.environ.get("POSTGRES_STATUS"),
+              "Frontend Quality (Lint & Vitest)": os.environ.get("FRONTEND_STATUS"),
+              "Database / Transactions (Invariants & Rollback)": os.environ.get("DATABASE_TX_STATUS"),
+              "Architecture Validation (Boundaries & Shielding)": os.environ.get("ARCHITECTURE_STATUS"),
+              "Artifact Validation (n8n & Architecture Diagrams)": os.environ.get("ARTIFACT_STATUS"),
+              "Production Build (Vite & Bytecode Compilation)": os.environ.get("PROD_BUILD_STATUS"),
+              "PR Policy Check (Conventional Title & Scope Guard)": os.environ.get("PR_POLICY_STATUS"),
+          }
+
+          print("=" * 70)
+          print("             MCO CONTINUOUS INTEGRATION QUALITY GATE")
+          print("=" * 70)
+          has_failure = False
+          summary_lines = [
+              "## MCO Quality Gate Evaluation",
+              "",
+              "| Stage / Gate | Result | Status |",
+              "| :--- | :---: | :--- |",
+          ]
+
+          for gate, status in gates.items():
+              icon = "PASSED" if status == "success" else "FAILED"
+              symbol = "✅" if status == "success" else "❌"
+              if status != "success":
+                  has_failure = True
+              print(f"[{icon:^8}] {symbol} {gate} -> {status}")
+              summary_lines.append(f"| {gate} | {symbol} | `{status}` |")
+
+          print("=" * 70)
+          summary_path = os.environ.get("GITHUB_STEP_SUMMARY")
+          if summary_path:
+              with open(summary_path, "a", encoding="utf-8") as f:
+                  f.write("\n".join(summary_lines) + "\n")
+
+          if has_failure:
+              print("\n[BLOCK] One or more quality gates did not succeed.")
+              print("Code may NOT enter main until all quality gates pass.")
+              sys.exit(1)
+
+          print("\n[PASS] All MCO Quality Gates PASSED.")
+          print("Code is fully validated, scoped, tested, and eligible to merge into main.")
+          PY
