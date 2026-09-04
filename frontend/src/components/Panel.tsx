@@ -1,22 +1,27 @@
-import type { PropsWithChildren, ReactNode } from 'react'
+import type React from "react"
 
-interface PanelProps extends PropsWithChildren {
-  title: string
+export interface PanelProps {
+  title?: string
   subtitle?: string
-  action?: ReactNode
+  action?: React.ReactNode
+  children: React.ReactNode
+  className?: string
+  noPadding?: boolean
 }
 
-export function Panel({ title, subtitle, action, children }: PanelProps) {
+export function Panel({ title, subtitle, action, children, className = "", noPadding = false }: PanelProps) {
   return (
-    <section className="rounded-2xl border border-slate-800 bg-slate-900/65 shadow-2xl shadow-black/10">
-      <div className="flex items-start justify-between gap-4 border-b border-slate-800 px-5 py-4">
-        <div>
-          <h3 className="font-medium text-slate-100">{title}</h3>
-          {subtitle ? <p className="mt-1 text-xs text-slate-500">{subtitle}</p> : null}
+    <div className={`bg-white border border-border rounded-[10px] overflow-hidden ${className}`}>
+      {(title || subtitle || action) && (
+        <div className="flex items-start justify-between gap-4 px-5 py-4 border-b border-border">
+          <div className="min-w-0">
+            {title && <h3 className="text-sm font-semibold text-gray-900">{title}</h3>}
+            {subtitle && <p className="text-xs text-text-secondary mt-0.5">{subtitle}</p>}
+          </div>
+          {action && <div className="flex-shrink-0">{action}</div>}
         </div>
-        {action}
-      </div>
-      <div className="p-5">{children}</div>
-    </section>
+      )}
+      <div className={noPadding ? "" : "p-5"}>{children}</div>
+    </div>
   )
 }
