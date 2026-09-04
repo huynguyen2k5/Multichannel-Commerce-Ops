@@ -1,7 +1,17 @@
 .PHONY: \
 	backend-install backend-lint backend-typecheck backend-test backend-compile \
 	frontend-install frontend-lint frontend-test frontend-build \
-	artifacts boundaries migrate seed check
+	artifacts boundaries migrate seed check \
+	docker-up docker-down docker-build
+
+docker-up:
+	docker compose up -d
+
+docker-down:
+	docker compose down
+
+docker-build:
+	docker compose build
 
 backend-install:
 	cd backend && python3 -m pip install -e '.[dev]'
