@@ -1,6 +1,12 @@
 {
   "name": "multichannel-commerce-ops",
   "private": true,
+  "scripts": {
+    "dev": "pnpm --filter mco-frontend dev",
+    "build": "pnpm --filter mco-frontend build",
+    "lint": "pnpm --filter mco-frontend lint",
+    "test": "pnpm --filter mco-frontend test"
+  },
   "devDependencies": {
     "@neon/config": "^1.2.0",
     "@neon/env": "^1.2.0"
