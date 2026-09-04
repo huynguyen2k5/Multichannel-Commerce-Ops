@@ -4,23 +4,27 @@ import { Button } from "@/components/Button"
 export interface ErrorStateProps {
   title?: string
   description?: string
+  message?: string
   onRetry?: () => void
   requestId?: string
 }
 
 export function ErrorState({
   title = "Unable to load data.",
-  description = "Check the API connection and try again.",
+  description,
+  message,
   onRetry,
   requestId,
 }: ErrorStateProps) {
+  const desc = description ?? message ?? "Check the API connection and try again."
   return (
     <div className="flex flex-col items-center justify-center py-14 px-6 text-center">
       <div className="w-10 h-10 rounded-xl bg-critical-50 flex items-center justify-center mb-3">
         <AlertCircle className="w-5 h-5 text-critical-600" />
       </div>
       <p className="text-sm font-medium text-gray-800 mb-1">{title}</p>
-      <p className="text-xs text-text-secondary max-w-xs mb-4">{description}</p>
+      <p className="text-xs text-text-secondary max-w-xs mb-4">{desc}</p>
+
       {onRetry && (
         <Button
           variant="secondary"

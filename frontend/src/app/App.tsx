@@ -4,6 +4,7 @@ import { AppShell } from '../components/AppShell'
 import { AlertsPage } from '../pages/AlertsPage'
 import { DashboardPage } from '../pages/DashboardPage'
 import { InventoryPage } from '../pages/InventoryPage'
+import { OrderDetailPage } from '../pages/OrderDetailPage'
 import { OrdersPage } from '../pages/OrdersPage'
 import { ReconciliationPage } from '../pages/ReconciliationPage'
 
@@ -13,6 +14,7 @@ export function App() {
       <Routes>
         <Route path="/" element={<DashboardPage />} />
         <Route path="/orders" element={<OrdersPage />} />
+        <Route path="/orders/:orderId" element={<OrderDetailPage />} />
         <Route path="/inventory" element={<InventoryPage />} />
         <Route path="/alerts" element={<AlertsPage />} />
         <Route path="/reconciliation" element={<ReconciliationPage />} />
@@ -21,3 +23,4 @@ export function App() {
     </AppShell>
   )
 }
+

@@ -1,4 +1,4 @@
-import { useEffect } from "react"
+import { createContext, useCallback, useContext, useEffect, useState, type ReactNode } from "react"
 import { CheckCircle, XCircle, Info, X } from "lucide-react"
 import type { ToastItem } from "@/types"
 
@@ -49,3 +49,40 @@ export function ToastContainer({ toasts, onDismiss }: ToastContainerProps) {
     </div>
   )
 }
+
+interface ToastContextType {
+  toasts: ToastItem[]
+  addToast: (toast: Omit<ToastItem, "id">) => void
+  dismissToast: (id: number) => void
+}
+
+const ToastContext = createContext<ToastContextType | null>(null)
+
+export function ToastProvider({ children }: { children: ReactNode }) {
+  const [toasts, setToasts] = useState<ToastItem[]>([])
+
+  const addToast = useCallback((toast: Omit<ToastItem, "id">) => {
+    const id = Date.now() + Math.random()
+    setToasts((prev) => [...prev, { ...toast, id }])
+  }, [])
+
+  const dismissToast = useCallback((id: number) => {
+    setToasts((prev) => prev.filter((t) => t.id !== id))
+  }, [])
+
+  return (
+    <ToastContext.Provider value={{ toasts, addToast, dismissToast }}>
+      {children}
+      <ToastContainer toasts={toasts} onDismiss={dismissToast} />
+    </ToastContext.Provider>
+  )
+}
+
+export function useToast() {
+  const ctx = useContext(ToastContext)
+  if (!ctx) {
+    throw new Error("useToast must be used within a ToastProvider")
+  }
+  return ctx
+}
+
