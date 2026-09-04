@@ -1,0 +1,97 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-postgres}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
+      POSTGRES_DB: ${POSTGRES_DB:-mco}
+    ports:
+      - "5432:5432"
+    volumes:
+      - mco_postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d mco"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  migrate:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    command: ["alembic", "upgrade", "head"]
+    env_file:
+      - path: .env
+        required: false
+    environment:
+      MCO_DATABASE_URL: ${MCO_DATABASE_URL:-postgresql+asyncpg://postgres:postgres@postgres:5432/mco}
+      MCO_MIGRATION_DATABASE_URL: ${MCO_MIGRATION_DATABASE_URL:-postgresql+psycopg://postgres:postgres@postgres:5432/mco}
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  seed:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    command: ["python", "-m", "app.scripts.seed_demo"]
+    env_file:
+      - path: .env
+        required: false
+    environment:
+      MCO_DATABASE_URL: ${MCO_DATABASE_URL:-postgresql+asyncpg://postgres:postgres@postgres:5432/mco}
+      MCO_MIGRATION_DATABASE_URL: ${MCO_MIGRATION_DATABASE_URL:-postgresql+psycopg://postgres:postgres@postgres:5432/mco}
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    env_file:
+      - path: .env
+        required: false
+    environment:
+      MCO_ENVIRONMENT: ${MCO_ENVIRONMENT:-development}
+      MCO_DATABASE_URL: ${MCO_DATABASE_URL:-postgresql+asyncpg://postgres:postgres@postgres:5432/mco}
+      MCO_MIGRATION_DATABASE_URL: ${MCO_MIGRATION_DATABASE_URL:-postgresql+psycopg://postgres:postgres@postgres:5432/mco}
+      MCO_CORS_ORIGINS: ${MCO_CORS_ORIGINS:-http://localhost:5173,http://localhost:3000,http://127.0.0.1:5173}
+    ports:
+      - "8000:8000"
+    depends_on:
+      seed:
+        condition: service_completed_successfully
+
+  frontend:
+    build:
+      context: .
+      dockerfile: frontend/Dockerfile
+    ports:
+      - "5173:80"
+    depends_on:
+      backend:
+        condition: service_healthy
+
+  n8n:
+    image: docker.n8n.io/n8nio/n8n:2.38.2
+    env_file:
+      - path: .env
+        required: false
+    environment:
+      N8N_EXPRESSION_ENGINE: vm
+      N8N_ENCRYPTION_KEY: ${N8N_ENCRYPTION_KEY:-dcfb03d851d22ec14a67d3f04b31db76119242d6e565645a06fba61114272a63}
+      MCO_API_BASE_URL: http://backend:8000
+      TELEGRAM_BOT_TOKEN: ${TELEGRAM_BOT_TOKEN:-}
+      TELEGRAM_CHAT_ID: ${TELEGRAM_CHAT_ID:-}
+    ports:
+      - "5678:5678"
+    volumes:
+      - mco_n8n_data:/home/node/.n8n
+    depends_on:
+      backend:
+        condition: service_healthy
+
+volumes:
+  mco_postgres_data:
+  mco_n8n_data:

@@ -1,35 +1,60 @@
-# Deployment notes
+# Containerization & Infrastructure Architecture
 
-## Backend: Railway
+## Overview
 
-Use `backend/railway.toml` as Config-as-Code. The Docker image runs as a non-root user and exposes `/ready` for deployment health. Railway executes `alembic upgrade head` before the new application revision is released.
+The Multichannel Commerce Operations (MCO) platform is fully containerized across all tiers. Each tier can run as an independent OCI container image or orchestrated locally via Docker Compose.
 
-Required backend variables:
+---
 
+## Container Packaging
+
+### 1. Backend Service (`backend/Dockerfile`)
+- **Runtime**: `python:3.12-slim`
+- **Security**: Runs under an unprivileged system user (`app`) with drop-in non-root permissions.
+- **Healthcheck**: Probes `GET /health` with automatic retries and exponential start period.
+- **Port**: `8000`
+
+Required environment variables:
 ```text
 MCO_ENVIRONMENT=production
 MCO_LOG_LEVEL=INFO
 MCO_DATABASE_URL=postgresql+asyncpg://...-pooler.../...
 MCO_MIGRATION_DATABASE_URL=postgresql+psycopg://...direct.../...
-MCO_CORS_ORIGINS=https://<cloudflare-pages-domain>
+MCO_CORS_ORIGINS=http://localhost:5173,https://your-domain.com
 ```
 
-Run `python -m app.scripts.seed_demo` once for the portfolio demo database. The seed is idempotent, but it is deliberately not part of every production release.
+### 2. Frontend Dashboard (`frontend/Dockerfile`)
+- **Multi-Stage Build**:
+  - *Builder*: `node:22-alpine` compiling React 19 + TypeScript + Vite with `pnpm`.
+  - *Runtime*: `nginx:1.27-alpine` serving static bundle with Gzip compression, asset caching, and SPA fallback routing.
+- **Reverse Proxy**: `frontend/nginx.conf` proxies `/api/` directly to `http://backend:8000/api/` and provides `/health` routing.
+- **Port**: `80` (mapped to `5173` in Docker Compose)
 
-## Frontend: Cloudflare Pages
+### 3. Database Layer (PostgreSQL / Neon)
+- **Local Engine**: `postgres:16-alpine` with persistent volume `mco_postgres_data`.
+- **Production Engine**: Neon Serverless Postgres via `neon link` and connection pooling (`NullPool` with asyncpg).
+- **Schema Management**: Alembic migrations execute `alembic upgrade head` before backend traffic is routed.
+- **Seed Catalog**: `python -m app.scripts.seed_demo` bootstraps initial channels and product master data.
 
-Build configuration:
+### 4. Workflow Automation (`n8n`)
+- **Image**: `docker.n8n.io/n8nio/n8n:2.38.2`
+- **Port**: `5678`
+- **Security**: Encrypted state with `N8N_ENCRYPTION_KEY`.
 
-```text
-Root directory: frontend
-Build command: pnpm run build
-Output directory: dist
+---
+
+## Orchestration with Docker Compose
+
+Run the complete multi-container stack from the repository root:
+
+```bash
+# Start all services in the background
+docker compose up -d
+
+# Check service health and logs
+docker compose ps
+docker compose logs -f
+
+# Teardown stack and preserve volumes
+docker compose down
 ```
-
-Set `VITE_API_BASE_URL` to the Railway API `/api/v1` origin. For the deterministic portfolio dataset, keep `VITE_DEMO_REPORT_DATE=2026-09-01` (or deliberately change both fixtures and demo date together). `frontend/public/_redirects` provides SPA history fallback and is copied into Vite output.
-
-## n8n
-
-Import the JSON files under `n8n/workflows/`, configure the environment variables documented in `README.md`, inspect credentials, and enable workflows only after test executions pass.
-
-Do not publish the local n8n compose instance directly to the Internet. Use a secured n8n deployment and keep its encryption key stable and secret.

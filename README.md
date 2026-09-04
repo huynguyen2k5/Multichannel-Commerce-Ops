@@ -134,18 +134,17 @@ Default URLs:
 
 ---
 
-### Option B: Docker Compose Integration Stack
+### Option B: Docker Compose Full-Stack
 
-To spin up the complete integrated stack (PostgreSQL, backend, migrations, seed, and n8n):
+To spin up the complete integrated stack (Frontend, Backend, PostgreSQL, Migrations, Seed, and n8n):
 ```bash
-cd infra
 cp .env.example .env
-# Set a secure N8N_ENCRYPTION_KEY in .env
-docker compose up --build
+docker compose up -d --build
 ```
 
 Services:
-- Backend: `http://localhost:8000`
+- Operations Dashboard: `http://localhost:5173`
+- Backend API & Docs: `http://localhost:8000/docs`
 - n8n Automation: `http://localhost:5678`
 - PostgreSQL: `localhost:5432`
 

@@ -81,7 +81,7 @@ If Telegram accepted a message but its response was lost, a later execution may 
 
 Create a new Alembic revision for schema changes; never rewrite an applied production revision.
 
-Railway uses `alembic upgrade head` as a pre-deploy command. A failed migration blocks the release.
+Containerized deployment uses `alembic upgrade head` as a pre-deploy/startup migration step. A failed migration blocks the release.
 
 For Neon, configure:
 
@@ -102,7 +102,7 @@ After deployment:
 
 ## 8. Rollback
 
-Application rollback: roll Railway back to the previous known-good deployment only if the database schema remains backward compatible.
+Application rollback: roll container images back to the previous known-good deployment only if the database schema remains backward compatible.
 
 Database rollback: prefer a forward corrective migration. Alembic `downgrade` is for controlled cases where the migration is proven reversible and no newer data depends on the changed schema.
 
