@@ -1,4 +1,4 @@
-from datetime import UTC, date, datetime
+from datetime import date
 
 from fastapi import APIRouter, Depends, Query
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -25,7 +25,8 @@ def get_reports_service(
 
 @router.get("/daily", response_model=DailyReport)
 async def daily_report(
-    report_date: date = Query(default_factory=lambda: datetime.now(UTC).date(), alias="date"),
+    report_date: date | None = Query(default=None, alias="date"),
     service: ReportsService = Depends(get_reports_service),
 ) -> DailyReport:
     return await service.daily_report(report_date)
+

@@ -57,6 +57,9 @@ class OrderItemRead(BaseModel):
     quantity: int
     unit_price: Decimal
     unit_cost: Decimal
+    sku: str | None = None
+    product_name: str | None = None
+
 
 
 class OrderRead(BaseModel):
