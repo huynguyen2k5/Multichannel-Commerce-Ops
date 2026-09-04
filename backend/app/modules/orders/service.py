@@ -95,8 +95,13 @@ class OrderService:
         )
 
     async def import_order(self, payload: OrderImportRequest) -> OrderImportResponse:
+        tx = (
+            self._session.begin_nested()
+            if self._session.in_transaction()
+            else self._session.begin()
+        )
         try:
-            async with self._session.begin():
+            async with tx:
                 channel = await self._channel_service.get_by_code(payload.channel)
                 assert channel.id is not None
 
@@ -171,7 +176,6 @@ class OrderService:
         except IntegrityError:
             # A concurrent retry can race the pre-insert lookup. The database unique
             # constraint is the final authority; the losing request becomes a no-op.
-            await self._session.rollback()
             channel = await self._channel_service.get_by_code(payload.channel)
             assert channel.id is not None
             existing = await self._repository.get_by_identity(
