@@ -44,12 +44,22 @@ services:
       MCO_ENVIRONMENT: development
       MCO_DATABASE_URL: postgresql+asyncpg://postgres:postgres@postgres:5432/mco
       MCO_MIGRATION_DATABASE_URL: postgresql+psycopg://postgres:postgres@postgres:5432/mco
-      MCO_CORS_ORIGINS: http://localhost:5173
+      MCO_CORS_ORIGINS: http://localhost:5173,http://localhost:3000,http://127.0.0.1:5173
     ports:
       - "8000:8000"
     depends_on:
       seed:
         condition: service_completed_successfully
+
+  frontend:
+    build:
+      context: ..
+      dockerfile: frontend/Dockerfile
+    ports:
+      - "5173:80"
+    depends_on:
+      backend:
+        condition: service_healthy
 
   n8n:
     image: docker.n8n.io/n8nio/n8n:2.38.2
