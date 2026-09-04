@@ -25,7 +25,7 @@ export interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElemen
   size?: ButtonSize
   loading?: boolean
   icon?: React.ReactNode
-  children: React.ReactNode
+  children?: React.ReactNode
 }
 
 export function Button({

@@ -1,6 +1,6 @@
 import { createContext, useCallback, useContext, useEffect, useState, type ReactNode } from "react"
 import { CheckCircle, XCircle, Info, X } from "lucide-react"
-import type { ToastItem } from "@/types"
+import type { ToastItem } from "../types"
 
 export interface ToastProps {
   toast: ToastItem

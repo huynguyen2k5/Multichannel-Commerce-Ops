@@ -1,14 +1,14 @@
 import { ArrowLeft, ShoppingBag } from 'lucide-react'
 import { useNavigate, useParams } from 'react-router-dom'
 
-import { ChannelBadge, OrderStatusBadge } from '@/components/Badge'
-import { Panel } from '@/components/Panel'
-import { Button } from '@/components/Button'
-import { Skeleton } from '@/components/Skeleton'
-import { ErrorState } from '@/components/ErrorState'
-import { EmptyState } from '@/components/EmptyState'
-import { useOrderDetail } from '@/features/orders/api'
-import { formatVND, formatDateTime } from '@/utils'
+import { ChannelBadge, OrderStatusBadge } from '../components/Badge'
+import { Panel } from '../components/Panel'
+import { Button } from '../components/Button'
+import { Skeleton } from '../components/Skeleton'
+import { ErrorState } from '../components/ErrorState'
+import { EmptyState } from '../components/EmptyState'
+import { useOrderDetail } from '../features/orders/api'
+import { formatVND, formatDateTime } from '../utils'
 
 export function OrderDetailPage() {
 

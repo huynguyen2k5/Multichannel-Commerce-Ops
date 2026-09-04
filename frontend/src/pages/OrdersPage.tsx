@@ -2,14 +2,14 @@ import { useState } from 'react'
 import { ShoppingBag, Search, X } from 'lucide-react'
 import { useNavigate } from 'react-router-dom'
 
-import { PageHeader } from '@/components/PageHeader'
-import { OrderStatusBadge, ChannelBadge } from '@/components/Badge'
-import { EmptyState } from '@/components/EmptyState'
-import { TableRowSkeleton } from '@/components/Skeleton'
-import { ErrorState } from '@/components/ErrorState'
-import { useOrders } from '@/features/orders/api'
-import { formatVND, formatDateTime } from '@/utils'
-import type { Channel } from '@/types'
+import { PageHeader } from '../components/PageHeader'
+import { OrderStatusBadge, ChannelBadge } from '../components/Badge'
+import { EmptyState } from '../components/EmptyState'
+import { TableRowSkeleton } from '../components/Skeleton'
+import { ErrorState } from '../components/ErrorState'
+import { useOrders } from '../features/orders/api'
+import { formatVND, formatDateTime } from '../utils'
+import type { Channel } from '../types'
 
 const CHANNELS: { value: Channel | 'all'; label: string }[] = [
   { value: 'all', label: 'All channels' },

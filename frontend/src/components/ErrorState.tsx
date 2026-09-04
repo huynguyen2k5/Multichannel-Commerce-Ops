@@ -1,5 +1,5 @@
 import { AlertCircle, RefreshCw } from "lucide-react"
-import { Button } from "@/components/Button"
+import { Button } from "./Button"
 
 export interface ErrorStateProps {
   title?: string
@@ -30,7 +30,9 @@ export function ErrorState({
           variant="secondary"
           size="sm"
           icon={<RefreshCw className="w-3.5 h-3.5" />}
-          onClick={onRetry}
+          onClick={() => {
+            onRetry()
+          }}
         >
           Retry
         </Button>

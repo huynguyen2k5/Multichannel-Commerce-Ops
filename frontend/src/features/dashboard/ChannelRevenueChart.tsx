@@ -1,7 +1,7 @@
 import { Bar, BarChart, CartesianGrid, Cell, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts'
 
 import type { DailyReport } from './api'
-import { CHANNEL_COLORS, CHANNEL_LABELS, formatVND } from '@/utils'
+import { CHANNEL_COLORS, CHANNEL_LABELS, formatVND } from '../../utils'
 
 interface ChannelRevenueChartProps {
   channels: DailyReport['channels']

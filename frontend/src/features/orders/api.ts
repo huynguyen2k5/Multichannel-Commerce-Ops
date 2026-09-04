@@ -9,7 +9,7 @@ export const orderSchema = z.object({
   channel: z.string(),
   external_order_id: z.string(),
   order_date: z.string(),
-  status: z.literal('paid'),
+  status: z.string(),
   total_amount: z.coerce.number(),
   source_updated_at: z.string().nullable(),
   created_at: z.string(),

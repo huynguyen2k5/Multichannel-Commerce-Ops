@@ -1,6 +1,6 @@
 import { LayoutDashboard, ShoppingBag, Package, TriangleAlert, ListChecks } from "lucide-react"
 import { Link, useLocation } from "react-router-dom"
-import type { Page } from "@/types"
+import type { Page } from "../types"
 
 interface NavItem {
   id: Page
@@ -77,7 +77,7 @@ export function Sidebar({ currentPage, onNavigate, activeAlerts }: SidebarProps)
                 <Icon className={`w-4 h-4 flex-shrink-0 ${isActive ? "text-primary-600" : "text-gray-400"}`} />
                 <span className="flex-1">{label}</span>
                 {id === "alerts" && activeAlerts && activeAlerts.total > 0 && (
-                  <span className={`text-[10px] font-semibold px-1.5 py-0.2 rounded-full ${activeAlerts.critical > 0 ? "bg-red-100 text-red-700" : "bg-amber-100 text-amber-700"}`}>
+                  <span className={`text-[10px] font-semibold px-1.5 py-0.5 rounded-full ${activeAlerts.critical > 0 ? "bg-red-100 text-red-700" : "bg-amber-100 text-amber-700"}`}>
                     {activeAlerts.total}
                   </span>
                 )}

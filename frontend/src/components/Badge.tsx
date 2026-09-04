@@ -1,6 +1,6 @@
 import type React from "react"
-import type { AlertSeverity } from "@/types"
-import { CHANNEL_COLORS, CHANNEL_LABELS } from "@/utils"
+import type { AlertSeverity } from "../types"
+import { CHANNEL_COLORS, CHANNEL_LABELS } from "../utils"
 
 export type BadgeVariant = "neutral" | "primary" | "success" | "warning" | "critical" | "info"
 export type BadgeSize = "sm" | "md"
