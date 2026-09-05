@@ -7,6 +7,7 @@ import { OrderStatusBadge, ChannelBadge } from '../components/Badge'
 import { EmptyState } from '../components/EmptyState'
 import { TableRowSkeleton } from '../components/Skeleton'
 import { ErrorState } from '../components/ErrorState'
+import { ApiError } from '../lib/api'
 import { useOrders } from '../features/orders/api'
 import { formatVND, formatDateTime } from '../utils'
 import type { Channel } from '../types'
@@ -105,6 +106,7 @@ export function OrdersPage() {
         <ErrorState
           title="Failed to load orders"
           message={error.message}
+          requestId={error instanceof ApiError ? error.requestId : undefined}
           onRetry={() => {
             void refetch()
           }}

@@ -15,6 +15,7 @@ import { Panel } from '../components/Panel'
 import { ChannelBadge, SeverityBadge, InventoryStatusBadge } from '../components/Badge'
 import { MetricCardSkeleton, ChartSkeleton, Skeleton } from '../components/Skeleton'
 import { ErrorState } from '../components/ErrorState'
+import { ApiError } from '../lib/api'
 import { ChannelProfitChart } from '../features/dashboard/ChannelProfitChart'
 import { ChannelRevenueChart } from '../features/dashboard/ChannelRevenueChart'
 import { useDailyReport } from '../features/dashboard/api'
@@ -57,6 +58,7 @@ export function DashboardPage() {
         <ErrorState
           title="Failed to load dashboard data"
           message={error.message}
+          requestId={error instanceof ApiError ? error.requestId : undefined}
           onRetry={() => {
             void handleRefresh()
           }}

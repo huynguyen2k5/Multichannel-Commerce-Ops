@@ -41,16 +41,22 @@ export async function apiRequest<T>(
 
   const payload: unknown = await response.json().catch(() => null)
   if (!response.ok) {
+    const headerRequestId = response.headers.get('x-request-id') || undefined
     const parsed = errorEnvelopeSchema.safeParse(payload)
     if (parsed.success) {
       throw new ApiError(
         response.status,
         parsed.data.error.code,
         parsed.data.error.message,
-        parsed.data.error.request_id,
+        parsed.data.error.request_id || headerRequestId,
       )
     }
-    throw new ApiError(response.status, 'HTTP_ERROR', `Request failed with status ${response.status}`)
+    throw new ApiError(
+      response.status,
+      'HTTP_ERROR',
+      `Request failed with status ${response.status}`,
+      headerRequestId,
+    )
   }
   return schema.parse(payload)
 }

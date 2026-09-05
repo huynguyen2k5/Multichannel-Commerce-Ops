@@ -10,6 +10,7 @@ import { ErrorState } from '../components/ErrorState'
 import { PageHeader } from '../components/PageHeader'
 import { TableRowSkeleton } from '../components/Skeleton'
 import { useToast } from '../components/Toast'
+import { ApiError } from '../lib/api'
 import { useReconciliations, useRunReconciliation } from '../features/reconciliation/api'
 import { formatDateTime } from '../utils'
 
@@ -61,6 +62,7 @@ export function ReconciliationPage() {
         <ErrorState
           title="Failed to load reconciliation history"
           description={error instanceof Error ? error.message : 'Please check your connection and retry.'}
+          requestId={error instanceof ApiError ? error.requestId : undefined}
           onRetry={() => {
             void refetch()
           }}

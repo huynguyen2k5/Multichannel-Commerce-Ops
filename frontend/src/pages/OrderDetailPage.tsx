@@ -7,6 +7,7 @@ import { Button } from '../components/Button'
 import { Skeleton } from '../components/Skeleton'
 import { ErrorState } from '../components/ErrorState'
 import { EmptyState } from '../components/EmptyState'
+import { ApiError } from '../lib/api'
 import { useOrderDetail } from '../features/orders/api'
 import { formatVND, formatDateTime } from '../utils'
 
@@ -46,6 +47,7 @@ export function OrderDetailPage() {
         <ErrorState
           title="Failed to load order detail"
           message={error.message}
+          requestId={error instanceof ApiError ? error.requestId : undefined}
           onRetry={() => {
             void refetch()
           }}

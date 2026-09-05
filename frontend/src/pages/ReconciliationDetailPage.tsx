@@ -3,6 +3,7 @@ import { useNavigate, useParams } from 'react-router-dom'
 
 import { ReconciliationStatusBadge } from '../components/Badge'
 import { ErrorState } from '../components/ErrorState'
+import { ApiError } from '../lib/api'
 import { Panel } from '../components/Panel'
 import { Skeleton } from '../components/Skeleton'
 import { useReconciliation } from '../features/reconciliation/api'
@@ -63,6 +64,7 @@ export function ReconciliationDetailPage() {
         <ErrorState
           title="Reconciliation run not found"
           description={error instanceof Error ? error.message : `Run #${id ?? ''} could not be loaded.`}
+          requestId={error instanceof ApiError ? error.requestId : undefined}
           onRetry={() => {
             void refetch()
           }}
