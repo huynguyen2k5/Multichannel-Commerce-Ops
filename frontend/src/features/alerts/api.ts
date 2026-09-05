@@ -21,9 +21,9 @@ export type Alert = z.infer<typeof alertSchema>
 export function useAlerts(resolved?: boolean) {
   return useQuery({
     queryKey: ['alerts', { resolved }],
-    queryFn: () => {
+    queryFn: ({ signal }) => {
       const query = resolved !== undefined ? `?resolved=${String(resolved)}` : ''
-      return apiRequest(`/alerts${query}`, alertsSchema)
+      return apiRequest(`/alerts${query}`, alertsSchema, { signal })
     },
   })
 }

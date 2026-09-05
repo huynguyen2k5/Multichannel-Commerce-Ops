@@ -31,7 +31,7 @@ export function useDailyReport(date?: string) {
   const path = date ? `/reports/daily?date=${encodeURIComponent(date)}` : '/reports/daily'
   return useQuery({
     queryKey: ['reports', 'daily', date ?? 'latest'],
-    queryFn: () => apiRequest(path, dailyReportSchema),
+    queryFn: ({ signal }) => apiRequest(path, dailyReportSchema, { signal }),
   })
 }
 
