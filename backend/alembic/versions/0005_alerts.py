@@ -5,8 +5,9 @@ Revises: 0004_ledger
 """
 from collections.abc import Sequence
 
-from alembic import op
 import sqlalchemy as sa
+
+from alembic import op
 
 revision: str = "0005_alerts"
 down_revision: str | None = "0004_ledger"
