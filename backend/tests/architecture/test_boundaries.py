@@ -5,7 +5,9 @@ from pathlib import Path
 repo_root = Path(__file__).resolve().parent.parent.parent.parent
 sys.path.insert(0, str(repo_root / "scripts"))
 
-from check_module_boundaries import check_module_boundaries  # noqa: E402
+from check_module_boundaries import (  # noqa: E402  # pyright: ignore [reportMissingImports]
+    check_module_boundaries,
+)
 
 
 def test_actual_codebase_has_zero_boundary_violations() -> None:

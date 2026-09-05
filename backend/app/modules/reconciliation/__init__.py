@@ -6,6 +6,7 @@ from app.modules.reconciliation.schemas import (
     ReconciliationMismatch,
     ReconciliationRead,
     ReconciliationRequest,
+    SourceOrderSnapshot,
 )
 from app.modules.reconciliation.service import ReconciliationService
 
@@ -16,5 +17,6 @@ __all__ = [
     "ReconciliationRequest",
     "ReconciliationService",
     "ReconciliationStatus",
+    "SourceOrderSnapshot",
     "router",
 ]

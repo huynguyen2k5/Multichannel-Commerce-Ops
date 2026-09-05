@@ -6,6 +6,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.modules.inventory.service import InventoryService
 from app.modules.products.models import Product
 from app.modules.products.repository import ProductRepository
+from app.modules.products.service import ProductService
 from app.shared.errors import BusinessRuleError
 
 
@@ -21,7 +22,7 @@ async def test_consume_stock_uses_atomic_guard(session: AsyncSession) -> None:
     await session.commit()
     assert product.id is not None
 
-    service = InventoryService(session, ProductRepository(session))
+    service = InventoryService(session, ProductService(ProductRepository(session)))
     updated = await service.consume(product.id, 3)
     await session.commit()
 
@@ -40,7 +41,7 @@ async def test_consume_stock_rejects_oversell(session: AsyncSession) -> None:
     await session.commit()
     assert product.id is not None
 
-    service = InventoryService(session, ProductRepository(session))
+    service = InventoryService(session, ProductService(ProductRepository(session)))
     with pytest.raises(BusinessRuleError) as error:
         await service.consume(product.id, 2)
 

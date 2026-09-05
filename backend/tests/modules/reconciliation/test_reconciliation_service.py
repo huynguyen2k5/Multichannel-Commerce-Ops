@@ -20,7 +20,10 @@ from app.modules.products.repository import ProductRepository
 from app.modules.products.service import ProductService
 from app.modules.reconciliation.models import ReconciliationStatus
 from app.modules.reconciliation.repository import ReconciliationRepository
-from app.modules.reconciliation.schemas import ReconciliationRequest
+from app.modules.reconciliation.schemas import (
+    ReconciliationRequest,
+    SourceOrderSnapshot,
+)
 from app.modules.reconciliation.service import ReconciliationService
 
 
@@ -29,7 +32,7 @@ async def _service(session: AsyncSession) -> ReconciliationService:
     product_service = ProductService(ProductRepository(session))
     alert_service = AlertService(session, AlertRepository(session))
     inventory_service = InventoryService(
-        session, ProductRepository(session), alert_service=alert_service
+        session, product_service, alert_service=alert_service
     )
     ledger_service = LedgerService(LedgerRepository(session))
     order_service = OrderService(
@@ -100,13 +103,15 @@ async def test_reconciliation_detects_wrong_revenue(session: AsyncSession) -> No
     result = await (await _service(session)).reconcile(
         ReconciliationRequest(
             source_system="shopee",
-            orders=[{"external_order_id": "SP-1", "total_amount": "500.00"}],
+            orders=[SourceOrderSnapshot(external_order_id="SP-1", total_amount=Decimal("500.00"))],
         )
     )
 
     assert result.status is ReconciliationStatus.MISMATCH
     assert result.mismatches_found == 1
-    codes = [item["code"] for item in result.detail_json["mismatches"]]
+    mismatches = result.detail_json.get("mismatches", [])
+    assert isinstance(mismatches, list)
+    codes = [item["code"] for item in mismatches if isinstance(item, dict)]
     assert codes == ["REVENUE_MISMATCH"]
     active_alerts = await AlertRepository(session).list_all(resolved=False)
     assert len(active_alerts) == 1
@@ -161,7 +166,7 @@ async def test_reconciliation_reports_clean_match(session: AsyncSession) -> None
     result = await (await _service(session)).reconcile(
         ReconciliationRequest(
             source_system="website",
-            orders=[{"external_order_id": "WEB-1", "total_amount": "320.00"}],
+            orders=[SourceOrderSnapshot(external_order_id="WEB-1", total_amount=Decimal("320.00"))],
         )
     )
 
@@ -177,13 +182,20 @@ async def test_reconciliation_detects_order_missing(session: AsyncSession) -> No
     result = await (await _service(session)).reconcile(
         ReconciliationRequest(
             source_system="tiktok",
-            orders=[{"external_order_id": "TK-MISSING", "total_amount": "100.00"}],
+            orders=[
+                SourceOrderSnapshot(
+                    external_order_id="TK-MISSING",
+                    total_amount=Decimal("100.00"),
+                )
+            ],
         )
     )
 
     assert result.status is ReconciliationStatus.MISMATCH
     assert result.mismatches_found == 1
-    codes = [item["code"] for item in result.detail_json["mismatches"]]
+    mismatches = result.detail_json.get("mismatches", [])
+    assert isinstance(mismatches, list)
+    codes = [item["code"] for item in mismatches if isinstance(item, dict)]
     assert codes == ["MISSING_ORDER"]
 
 
@@ -241,11 +253,13 @@ async def test_reconciliation_detects_total_and_cogs_mismatches(session: AsyncSe
     result = await (await _service(session)).reconcile(
         ReconciliationRequest(
             source_system="shopee",
-            orders=[{"external_order_id": "SP-2", "total_amount": "250.00"}],
+            orders=[SourceOrderSnapshot(external_order_id="SP-2", total_amount=Decimal("250.00"))],
         )
     )
 
     assert result.status is ReconciliationStatus.MISMATCH
     assert result.mismatches_found == 3
-    codes = {item["code"] for item in result.detail_json["mismatches"]}
+    mismatches = result.detail_json.get("mismatches", [])
+    assert isinstance(mismatches, list)
+    codes = {item["code"] for item in mismatches if isinstance(item, dict)}
     assert codes == {"TOTAL_MISMATCH", "REVENUE_MISMATCH", "COGS_MISMATCH"}

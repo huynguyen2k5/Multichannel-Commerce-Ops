@@ -13,14 +13,21 @@ from app.modules.ledger.models import LedgerEntryType
 from app.modules.ledger.repository import LedgerRepository
 from app.modules.ledger.service import LedgerService
 from app.modules.orders.repository import OrderRepository
-from app.modules.orders.schemas import OrderImportRequest, OrderImportStatus
+from app.modules.orders.schemas import (
+    OrderImportItem,
+    OrderImportRequest,
+    OrderImportStatus,
+)
 from app.modules.orders.service import OrderService
 from app.modules.products.models import Product
 from app.modules.products.repository import ProductRepository
 from app.modules.products.service import ProductService
 from app.modules.reconciliation.models import ReconciliationStatus
 from app.modules.reconciliation.repository import ReconciliationRepository
-from app.modules.reconciliation.schemas import ReconciliationRequest
+from app.modules.reconciliation.schemas import (
+    ReconciliationRequest,
+    SourceOrderSnapshot,
+)
 from app.modules.reconciliation.service import ReconciliationService
 from app.modules.reports.repository import ReportsRepository
 from app.modules.reports.service import ReportsService
@@ -74,11 +81,11 @@ async def test_paid_order_pipeline_is_idempotent_and_reconciles(
         order_date=datetime(2026, 9, 3, 2, 0, tzinfo=UTC),
         total_amount=Decimal("500.00"),
         items=[
-            {
-                "sku": "TEE-BLK-M",
-                "quantity": 2,
-                "unit_price": Decimal("250.00"),
-            }
+            OrderImportItem(
+                sku="TEE-BLK-M",
+                quantity=2,
+                unit_price=Decimal("250.00"),
+            )
         ],
     )
 
@@ -111,10 +118,10 @@ async def test_paid_order_pipeline_is_idempotent_and_reconciles(
         ReconciliationRequest(
             source_system="shopee",
             orders=[
-                {
-                    "external_order_id": "SP-E2E-1",
-                    "total_amount": Decimal("500.00"),
-                }
+                SourceOrderSnapshot(
+                    external_order_id="SP-E2E-1",
+                    total_amount=Decimal("500.00"),
+                )
             ],
         )
     )
