@@ -17,6 +17,10 @@ export function formatCurrency(amount: number, currency = "VND"): string {
   return new Intl.NumberFormat("vi-VN", { style: "currency", currency }).format(amount)
 }
 
+export function formatInteger(value: number): string {
+  return new Intl.NumberFormat("vi-VN", { maximumFractionDigits: 0 }).format(value)
+}
+
 export function formatDate(dateStr: string): string {
   const d = new Date(dateStr)
   if (Number.isNaN(d.getTime())) return dateStr
