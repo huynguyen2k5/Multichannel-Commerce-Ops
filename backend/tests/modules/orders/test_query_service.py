@@ -26,6 +26,7 @@ def build_service(session: AsyncSession) -> OrderService:
         repository=OrderRepository(session),
         channel_service=ChannelService(ChannelRepository(session)),
         product_service=ProductService(products),
+        # pyrefly: ignore [bad-argument-type]
         inventory_service=InventoryService(session, products),
         ledger_service=LedgerService(LedgerRepository(session)),
     )
@@ -72,3 +73,42 @@ async def test_order_detail_rejects_unknown_id(session: AsyncSession) -> None:
         await build_service(session).get_order(999)
 
     assert error.value.code == "ORDER_NOT_FOUND"
+
+
+async def test_order_query_filters_by_channel_and_search(session: AsyncSession) -> None:
+    ch_shopee = Channel(code="shopee", name="Shopee", platform_type="marketplace")
+    ch_tiktok = Channel(code="tiktok", name="TikTok Shop", platform_type="marketplace")
+    session.add_all([ch_shopee, ch_tiktok])
+    await session.flush()
+    assert ch_shopee.id is not None
+    assert ch_tiktok.id is not None
+
+    session.add_all(
+        [
+            Order(
+                channel_id=ch_shopee.id,
+                external_order_id="SHP-101",
+                order_date=datetime(2026, 9, 3, tzinfo=UTC),
+                total_amount=Decimal("150000.00"),
+            ),
+            Order(
+                channel_id=ch_tiktok.id,
+                external_order_id="TT-202",
+                order_date=datetime(2026, 9, 3, tzinfo=UTC),
+                total_amount=Decimal("200000.00"),
+            ),
+        ]
+    )
+    await session.commit()
+
+    service = build_service(session)
+    # Filter by channel
+    shopee_orders = await service.list_orders(limit=10, offset=0, channel="shopee")
+    assert len(shopee_orders) == 1
+    assert shopee_orders[0].external_order_id == "SHP-101"
+
+    # Filter by search
+    searched = await service.list_orders(limit=10, offset=0, search="202")
+    assert len(searched) == 1
+    assert searched[0].external_order_id == "TT-202"
+

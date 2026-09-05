@@ -9,7 +9,7 @@ from app.modules.channels.service import ChannelService
 from app.modules.inventory.service import InventoryService
 from app.modules.ledger.schemas import OrderSaleRecord, SaleItemRecord
 from app.modules.ledger.service import LedgerService
-from app.modules.orders.models import Order, OrderItem
+from app.modules.orders.models import Order, OrderItem, OrderStatus
 from app.modules.orders.repository import OrderRepository
 from app.modules.orders.schemas import (
     OrderDetail,
@@ -42,8 +42,22 @@ class OrderService:
         self._inventory_service = inventory_service
         self._ledger_service = ledger_service
 
-    async def list_orders(self, *, limit: int, offset: int) -> list[OrderRead]:
-        rows = await self._repository.list_with_channel(limit=limit, offset=offset)
+    async def list_orders(
+        self,
+        *,
+        limit: int,
+        offset: int,
+        channel: str | None = None,
+        status: OrderStatus | None = None,
+        search: str | None = None,
+    ) -> list[OrderRead]:
+        rows = await self._repository.list_with_channel(
+            limit=limit,
+            offset=offset,
+            channel=channel,
+            status=status,
+            search=search,
+        )
         return [self._to_read(order, channel) for order, channel in rows]
 
     async def get_order(self, order_id: int) -> OrderDetail:
@@ -56,10 +70,33 @@ class OrderService:
             )
         order, channel = row
         items = await self._repository.get_items(order_id)
+        product_ids = [item.product_id for item in items]
+        products = await self._product_service.get_by_ids(product_ids)
+        product_by_id = {p.id: p for p in products if p.id is not None}
+
+        item_reads: list[OrderItemRead] = []
+        for item in items:
+            if item.id is None:
+                continue
+            product = product_by_id.get(item.product_id)
+            item_reads.append(
+                OrderItemRead(
+                    id=item.id,
+                    product_id=item.product_id,
+                    quantity=item.quantity,
+                    unit_price=item.unit_price,
+                    unit_cost=item.unit_cost,
+                    sku=product.sku if product is not None else None,
+                    product_name=product.name if product is not None else None,
+                )
+            )
+
+
         return OrderDetail(
             **self._to_read(order, channel).model_dump(),
-            items=[OrderItemRead.model_validate(item) for item in items],
+            items=item_reads,
         )
+
 
     async def get_orders_for_reconciliation(
         self,

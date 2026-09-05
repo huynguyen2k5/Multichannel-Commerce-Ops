@@ -1,5 +1,7 @@
+from collections.abc import Sequence
+
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlmodel import select
+from sqlmodel import col, select
 
 from app.modules.products.models import Product
 
@@ -15,6 +17,15 @@ class ProductRepository:
     async def get_by_id(self, product_id: int) -> Product | None:
         return await self._session.get(Product, product_id)
 
+    async def get_by_ids(self, product_ids: Sequence[int]) -> list[Product]:
+        if not product_ids:
+            return []
+        result = await self._session.execute(
+            select(Product).where(col(Product.id).in_(product_ids))
+        )
+        return list(result.scalars().all())
+
     async def list_all(self) -> list[Product]:
         result = await self._session.execute(select(Product).order_by(Product.sku))
         return list(result.scalars().all())
+

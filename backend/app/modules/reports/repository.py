@@ -63,3 +63,11 @@ class ReportsRepository:
             (str(code), str(name), int(order_count), Decimal(revenue_total), Decimal(cogs_total))
             for code, name, order_count, revenue_total, cogs_total in result.all()
         ]
+
+    async def get_latest_date(self) -> date | None:
+        result = await self._session.execute(select(func.max(Order.order_date)))
+        latest = result.scalar_one_or_none()
+        if latest is None:
+            return None
+        return latest.date()
+

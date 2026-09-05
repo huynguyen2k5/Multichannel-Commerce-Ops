@@ -5,6 +5,7 @@ from app.database import get_session
 from app.modules.channels import ChannelService, get_channel_service
 from app.modules.inventory import InventoryService, get_inventory_service
 from app.modules.ledger import LedgerService, get_ledger_service
+from app.modules.orders.models import OrderStatus
 from app.modules.orders.repository import OrderRepository
 from app.modules.orders.schemas import (
     OrderDetail,
@@ -52,9 +53,19 @@ async def import_order(
 async def list_orders(
     limit: int = Query(default=50, ge=1, le=100),
     offset: int = Query(default=0, ge=0),
+    channel: str | None = Query(default=None),
+    status: OrderStatus | None = Query(default=None),
+    search: str | None = Query(default=None),
     service: OrderService = Depends(get_order_service),
 ) -> list[OrderRead]:
-    return await service.list_orders(limit=limit, offset=offset)
+    return await service.list_orders(
+        limit=limit,
+        offset=offset,
+        channel=channel,
+        status=status,
+        search=search,
+    )
+
 
 
 @router.get("/{order_id}", response_model=OrderDetail)

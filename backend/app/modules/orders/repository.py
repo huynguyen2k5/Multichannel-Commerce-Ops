@@ -4,7 +4,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlmodel import col, select
 
 from app.modules.channels.models import Channel
-from app.modules.orders.models import Order, OrderItem
+from app.modules.orders.models import Order, OrderItem, OrderStatus
 
 
 class OrderRepository:
@@ -32,15 +32,35 @@ class OrderRepository:
         self._session.add_all(list(items))
         await self._session.flush()
 
-    async def list_with_channel(self, *, limit: int, offset: int) -> list[tuple[Order, str]]:
-        result = await self._session.execute(
+    async def list_with_channel(
+        self,
+        *,
+        limit: int,
+        offset: int,
+        channel: str | None = None,
+        status: OrderStatus | None = None,
+        search: str | None = None,
+    ) -> list[tuple[Order, str]]:
+        stmt = (
             select(Order, Channel.code)
             .join(Channel, col(Channel.id) == col(Order.channel_id))
-            .order_by(col(Order.order_date).desc(), col(Order.id).desc())
+        )
+        if channel is not None:
+            stmt = stmt.where(col(Channel.code) == channel)
+        if status is not None:
+            stmt = stmt.where(col(Order.status) == status)
+        if search is not None and search.strip():
+            stmt = stmt.where(col(Order.external_order_id).ilike(f"%{search.strip()}%"))
+
+        stmt = (
+            stmt.order_by(col(Order.order_date).desc(), col(Order.id).desc())
             .offset(offset)
             .limit(limit)
         )
+        result = await self._session.execute(stmt)
+
         return [(order, str(channel_code)) for order, channel_code in result.all()]
+
 
     async def get_with_channel(self, order_id: int) -> tuple[Order, str] | None:
         result = await self._session.execute(
