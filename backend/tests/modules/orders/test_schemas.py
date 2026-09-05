@@ -4,7 +4,7 @@ from decimal import Decimal
 import pytest
 from pydantic import ValidationError
 
-from app.modules.orders.schemas import OrderImportRequest
+from app.modules.orders.schemas import OrderImportItem, OrderImportRequest
 
 
 def test_import_contract_rejects_inconsistent_total() -> None:
@@ -14,7 +14,7 @@ def test_import_contract_rejects_inconsistent_total() -> None:
             external_order_id="SP-1",
             order_date=datetime.now(UTC),
             total_amount=Decimal("999.00"),
-            items=[{"sku": "TEE-BLK-M", "quantity": 2, "unit_price": "250.00"}],
+            items=[OrderImportItem(sku="TEE-BLK-M", quantity=2, unit_price=Decimal("250.00"))],
         )
 
 
@@ -26,7 +26,7 @@ def test_import_contract_rejects_duplicate_sku_lines() -> None:
             order_date=datetime.now(UTC),
             total_amount=Decimal("500.00"),
             items=[
-                {"sku": "TEE-BLK-M", "quantity": 1, "unit_price": "250.00"},
-                {"sku": "TEE-BLK-M", "quantity": 1, "unit_price": "250.00"},
+                OrderImportItem(sku="TEE-BLK-M", quantity=1, unit_price=Decimal("250.00")),
+                OrderImportItem(sku="TEE-BLK-M", quantity=1, unit_price=Decimal("250.00")),
             ],
         )

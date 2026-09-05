@@ -7,6 +7,7 @@ from app.modules.alerts.service import AlertService
 from app.modules.inventory.service import InventoryService
 from app.modules.products.models import Product
 from app.modules.products.repository import ProductRepository
+from app.modules.products.service import ProductService
 
 
 async def test_stock_crossing_threshold_creates_one_active_alert(session: AsyncSession) -> None:
@@ -22,7 +23,9 @@ async def test_stock_crossing_threshold_creates_one_active_alert(session: AsyncS
     assert product.id is not None
 
     alerts = AlertService(session, AlertRepository(session))
-    inventory = InventoryService(session, ProductRepository(session), alert_service=alerts)
+    inventory = InventoryService(
+        session, ProductService(ProductRepository(session)), alert_service=alerts
+    )
 
     async with session.begin():
         await inventory.consume(product.id, 2)

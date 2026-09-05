@@ -9,6 +9,7 @@ import { ErrorState } from '../components/ErrorState'
 import { PageHeader } from '../components/PageHeader'
 import { TableRowSkeleton } from '../components/Skeleton'
 import { useToast } from '../components/Toast'
+import { ApiError } from '../lib/api'
 import { useAlerts, useResolveAlert } from '../features/alerts/api'
 import type { AlertStatus } from '../types'
 import { formatDateTime } from '../utils'
@@ -56,6 +57,7 @@ export function AlertsPage() {
         <ErrorState
           title="Failed to load alerts"
           description={error instanceof Error ? error.message : 'Please check your connection and retry.'}
+          requestId={error instanceof ApiError ? error.requestId : undefined}
           onRetry={() => {
             void refetch()
           }}

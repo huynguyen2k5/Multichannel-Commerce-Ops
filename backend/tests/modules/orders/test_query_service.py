@@ -20,14 +20,13 @@ from app.shared.errors import NotFoundError
 
 
 def build_service(session: AsyncSession) -> OrderService:
-    products = ProductRepository(session)
+    product_service = ProductService(ProductRepository(session))
     return OrderService(
         session=session,
         repository=OrderRepository(session),
         channel_service=ChannelService(ChannelRepository(session)),
-        product_service=ProductService(products),
-        # pyrefly: ignore [bad-argument-type]
-        inventory_service=InventoryService(session, products),
+        product_service=product_service,
+        inventory_service=InventoryService(session, product_service),
         ledger_service=LedgerService(LedgerRepository(session)),
     )
 

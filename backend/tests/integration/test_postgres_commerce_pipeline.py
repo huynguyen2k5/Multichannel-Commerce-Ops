@@ -12,7 +12,12 @@ from app.modules.channels.repository import ChannelRepository
 from app.modules.inventory import InventoryService
 from app.modules.ledger import LedgerEntryType, LedgerService
 from app.modules.ledger.repository import LedgerRepository
-from app.modules.orders import OrderImportRequest, OrderImportStatus, OrderService
+from app.modules.orders import (
+    OrderImportItem,
+    OrderImportRequest,
+    OrderImportStatus,
+    OrderService,
+)
 from app.modules.orders.repository import OrderRepository
 from app.modules.products import Product, ProductService
 from app.modules.products.repository import ProductRepository
@@ -20,6 +25,7 @@ from app.modules.reconciliation import (
     ReconciliationRequest,
     ReconciliationService,
     ReconciliationStatus,
+    SourceOrderSnapshot,
 )
 from app.modules.reconciliation.repository import ReconciliationRepository
 from app.modules.reports import ReportsService
@@ -103,7 +109,7 @@ async def test_postgres_critical_multichannel_pipeline(pg_session: AsyncSession)
             external_order_id="SP-PG-001",
             order_date=datetime(2026, 9, 3, 2, 0, tzinfo=UTC),
             total_amount=Decimal("500.00"),
-            items=[{"sku": "TEE-BLK-M", "quantity": 2, "unit_price": Decimal("250.00")}],
+            items=[OrderImportItem(sku="TEE-BLK-M", quantity=2, unit_price=Decimal("250.00"))],
         )
     )
     assert sp_order.status is OrderImportStatus.IMPORTED
@@ -115,7 +121,7 @@ async def test_postgres_critical_multichannel_pipeline(pg_session: AsyncSession)
             external_order_id="TT-PG-001",
             order_date=datetime(2026, 9, 3, 3, 30, tzinfo=UTC),
             total_amount=Decimal("800.00"),
-            items=[{"sku": "HOODIE-GRY-L", "quantity": 1, "unit_price": Decimal("800.00")}],
+            items=[OrderImportItem(sku="HOODIE-GRY-L", quantity=1, unit_price=Decimal("800.00"))],
         )
     )
     assert tt_order.status is OrderImportStatus.IMPORTED
@@ -128,8 +134,8 @@ async def test_postgres_critical_multichannel_pipeline(pg_session: AsyncSession)
             order_date=datetime(2026, 9, 3, 5, 15, tzinfo=UTC),
             total_amount=Decimal("1060.00"),
             items=[
-                {"sku": "TEE-BLK-M", "quantity": 1, "unit_price": Decimal("260.00")},
-                {"sku": "HOODIE-GRY-L", "quantity": 1, "unit_price": Decimal("800.00")},
+                OrderImportItem(sku="TEE-BLK-M", quantity=1, unit_price=Decimal("260.00")),
+                OrderImportItem(sku="HOODIE-GRY-L", quantity=1, unit_price=Decimal("800.00")),
             ],
         )
     )
@@ -174,7 +180,12 @@ async def test_postgres_critical_multichannel_pipeline(pg_session: AsyncSession)
     recon_res = await recon_svc.reconcile(
         ReconciliationRequest(
             source_system="shopee",
-            orders=[{"external_order_id": "SP-PG-001", "total_amount": Decimal("500.00")}],
+            orders=[
+                SourceOrderSnapshot(
+                    external_order_id="SP-PG-001",
+                    total_amount=Decimal("500.00"),
+                )
+            ],
         )
     )
     assert recon_res.status is ReconciliationStatus.SUCCESS
@@ -188,7 +199,7 @@ async def test_postgres_critical_multichannel_pipeline(pg_session: AsyncSession)
             external_order_id="SP-PG-001",
             order_date=datetime(2026, 9, 3, 2, 0, tzinfo=UTC),
             total_amount=Decimal("500.00"),
-            items=[{"sku": "TEE-BLK-M", "quantity": 2, "unit_price": Decimal("250.00")}],
+            items=[OrderImportItem(sku="TEE-BLK-M", quantity=2, unit_price=Decimal("250.00"))],
         )
     )
     assert dup_res.status is OrderImportStatus.DUPLICATE
@@ -206,7 +217,7 @@ async def test_postgres_critical_multichannel_pipeline(pg_session: AsyncSession)
                 external_order_id="WEB-OVERSOLD-1",
                 order_date=datetime(2026, 9, 3, 6, 0, tzinfo=UTC),
                 total_amount=Decimal("12500.00"),
-                items=[{"sku": "TEE-BLK-M", "quantity": 50, "unit_price": Decimal("250.00")}],
+                items=[OrderImportItem(sku="TEE-BLK-M", quantity=50, unit_price=Decimal("250.00"))],
             )
         )
     assert exc_info.value.code == "INSUFFICIENT_STOCK"

@@ -28,14 +28,14 @@ export type ReconciliationMismatch = z.infer<typeof mismatchSchema>
 export function useReconciliations() {
   return useQuery({
     queryKey: ['reconciliations'],
-    queryFn: () => apiRequest('/reconciliations', reconciliationListSchema),
+    queryFn: ({ signal }) => apiRequest('/reconciliations', reconciliationListSchema, { signal }),
   })
 }
 
 export function useReconciliation(id?: number) {
   return useQuery({
     queryKey: ['reconciliations', id],
-    queryFn: () => apiRequest(`/reconciliations/${id}`, reconciliationSchema),
+    queryFn: ({ signal }) => apiRequest(`/reconciliations/${id}`, reconciliationSchema, { signal }),
     enabled: typeof id === 'number' && !isNaN(id),
   })
 }

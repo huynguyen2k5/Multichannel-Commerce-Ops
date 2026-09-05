@@ -56,14 +56,14 @@ export function useOrders(params: OrderFilterParams = {}) {
 
   return useQuery({
     queryKey: ['orders', { channel, status, search }],
-    queryFn: () => apiRequest(`/orders?${searchParams.toString()}`, ordersSchema),
+    queryFn: ({ signal }) => apiRequest(`/orders?${searchParams.toString()}`, ordersSchema, { signal }),
   })
 }
 
 export function useOrderDetail(orderId: number | null | undefined) {
   return useQuery({
     queryKey: ['orders', orderId],
-    queryFn: () => apiRequest(`/orders/${orderId}`, orderDetailSchema),
+    queryFn: ({ signal }) => apiRequest(`/orders/${orderId}`, orderDetailSchema, { signal }),
     enabled: typeof orderId === 'number' && Number.isInteger(orderId) && orderId > 0,
   })
 }

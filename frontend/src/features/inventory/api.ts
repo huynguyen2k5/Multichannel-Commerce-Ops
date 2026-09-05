@@ -20,6 +20,6 @@ export type InventoryItem = z.infer<typeof inventorySchema>[number]
 export function useInventory() {
   return useQuery({
     queryKey: ['inventory'],
-    queryFn: () => apiRequest('/inventory', inventorySchema),
+    queryFn: ({ signal }) => apiRequest('/inventory', inventorySchema, { signal }),
   })
 }

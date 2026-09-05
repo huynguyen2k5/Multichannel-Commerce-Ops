@@ -31,8 +31,10 @@ jobs:
         run: ruff check app tests
       - name: Type check with Mypy
         run: mypy app
-      - name: Run SQLite Unit Tests
-        run: python -m pytest tests/modules tests/test_*.py -v
+      - name: Check Module Boundaries
+        run: python ../scripts/check_module_boundaries.py
+      - name: Run Backend Tests (Unit & Architecture)
+        run: python -m pytest tests -v
 
   postgres-integration:
     name: PostgreSQL Integration (Migrations & Seed)
@@ -90,6 +92,8 @@ jobs:
         run: pnpm --filter mco-frontend lint
       - name: Run Vitest Unit Tests
         run: pnpm --filter mco-frontend test
+      - name: Build Frontend (Typecheck & Bundle)
+        run: pnpm --filter mco-frontend build
 
   database-transactions:
     name: Database / Transactions (Invariants & Rollback)

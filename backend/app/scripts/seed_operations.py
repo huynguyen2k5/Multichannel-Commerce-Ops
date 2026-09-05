@@ -181,7 +181,9 @@ async def seed_operations() -> None:
             if existing_order is not None:
                 continue
 
-            total_amount = sum(qty * price for _, qty, price in items)
+            total_amount = sum(
+                (qty * price for _, qty, price in items), start=Decimal("0.00")
+            )
             order = Order(
                 channel_id=channel.id,
                 external_order_id=ext_id,

@@ -12,7 +12,7 @@ from app.modules.ledger.repository import LedgerRepository
 from app.modules.ledger.schemas import OrderSaleRecord
 from app.modules.ledger.service import LedgerService
 from app.modules.orders.repository import OrderRepository
-from app.modules.orders.schemas import OrderImportRequest
+from app.modules.orders.schemas import OrderImportItem, OrderImportRequest
 from app.modules.orders.service import OrderService
 from app.modules.products.models import Product
 from app.modules.products.repository import ProductRepository
@@ -43,7 +43,7 @@ async def test_ledger_failure_rolls_back_order_items_and_inventory(session: Asyn
         repository=order_repository,
         channel_service=ChannelService(ChannelRepository(session)),
         product_service=ProductService(product_repository),
-        inventory_service=InventoryService(session, product_repository),
+        inventory_service=InventoryService(session, ProductService(product_repository)),
         ledger_service=FailingLedgerService(LedgerRepository(session)),
     )
     payload = OrderImportRequest(
@@ -51,7 +51,7 @@ async def test_ledger_failure_rolls_back_order_items_and_inventory(session: Asyn
         external_order_id="SP-ROLLBACK",
         order_date=datetime(2026, 9, 1, tzinfo=UTC),
         total_amount=Decimal("500000.00"),
-        items=[{"sku": "TEE-BLK-M", "quantity": 2, "unit_price": "250000.00"}],
+        items=[OrderImportItem(sku="TEE-BLK-M", quantity=2, unit_price=Decimal("250000.00"))],
     )
 
     with pytest.raises(RuntimeError, match="simulated ledger failure"):

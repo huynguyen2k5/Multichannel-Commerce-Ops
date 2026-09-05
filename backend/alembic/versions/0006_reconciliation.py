@@ -5,8 +5,9 @@ Revises: 0005_alerts
 """
 from collections.abc import Sequence
 
-from alembic import op
 import sqlalchemy as sa
+
+from alembic import op
 
 revision: str = "0006_reconciliation"
 down_revision: str | None = "0005_alerts"
@@ -21,7 +22,13 @@ def upgrade() -> None:
         sa.Column("source_system", sa.String(length=64), nullable=False),
         sa.Column(
             "status",
-            sa.Enum("SUCCESS", "MISMATCH", "FAILED", name="reconciliationstatus", native_enum=False),
+            sa.Enum(
+                "SUCCESS",
+                "MISMATCH",
+                "FAILED",
+                name="reconciliationstatus",
+                native_enum=False,
+            ),
             nullable=False,
         ),
         sa.Column("records_checked", sa.Integer(), nullable=False),
@@ -30,7 +37,10 @@ def upgrade() -> None:
         sa.Column("started_at", sa.DateTime(timezone=True), nullable=False),
         sa.Column("completed_at", sa.DateTime(timezone=True), nullable=False),
         sa.CheckConstraint("records_checked >= 0", name="ck_reconciliation_records_nonnegative"),
-        sa.CheckConstraint("mismatches_found >= 0", name="ck_reconciliation_mismatches_nonnegative"),
+        sa.CheckConstraint(
+            "mismatches_found >= 0",
+            name="ck_reconciliation_mismatches_nonnegative",
+        ),
         sa.PrimaryKeyConstraint("id"),
     )
     op.create_index(
